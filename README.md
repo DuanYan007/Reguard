@@ -191,7 +191,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ### Development Setup
 
 ```bash
-git clone https://github.com/yourusername/markitdown-java.git
+git clone https://github.com/DuanYan007/markitdown-java.git
 cd markitdown-java
 mvn clean install
 ```
