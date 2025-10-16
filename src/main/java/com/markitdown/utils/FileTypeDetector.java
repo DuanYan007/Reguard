@@ -12,6 +12,7 @@ import java.util.*;
  * @version 1.0.0
  * @since 1.0.0
  */
+// checked
 public class FileTypeDetector {
 
     private static final Map<String, String> EXTENSION_TO_MIME_TYPE;
@@ -207,7 +208,7 @@ public class FileTypeDetector {
             if (b < 0x20 && b != '\t' && b != '\n' && b != '\r') {
                 return false;
             }
-            // Todo: 等待修正
+
             if (b > 0x7F && !isValidUtf8Continuation(bytes, i, byteCount)) {
                 return false;
             }
@@ -222,6 +223,14 @@ public class FileTypeDetector {
      * @param index     the current index
      * @param maxLength the maximum valid index
      * @return true if this is a valid UTF-8 continuation
+     */
+    /*
+     UTF-8编码分为单字节，双字节，三字节和四字节
+     除了单字节外，剩余三者除首字节外 其余字节称为继续字节 形如 10xxxxxx(8位)
+     其余首字节格式:
+     双字节  110xxxxx
+     三字节  1110xxxx
+     四字节  11110xxx
      */
     private static boolean isValidUtf8Continuation(byte[] bytes, int index, int maxLength) {
         byte b = bytes[index];
