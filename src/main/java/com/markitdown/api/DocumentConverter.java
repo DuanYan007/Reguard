@@ -1,6 +1,7 @@
 package com.markitdown.api;
 
 import com.markitdown.config.ConversionOptions;
+import com.markitdown.exception.ConversionException;
 
 import java.nio.file.Path;
 
