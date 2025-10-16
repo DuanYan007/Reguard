@@ -270,4 +270,5 @@ public class FileTypeDetector {
     public static boolean isSupportedExtension(String extension) {
         return EXTENSION_TO_MIME_TYPE.containsKey(extension.toLowerCase());
     }
+    // Test
 }
