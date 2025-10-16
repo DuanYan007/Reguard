@@ -175,6 +175,7 @@ public class FileTypeDetector {
             }
 
             // JSON signatures
+            // Todo: Json格式可以更加细致地判断，容易将纯文本误判为JSON
             String trimmed = headerStr.trim();
             if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
                 return "application/json";
@@ -206,6 +207,7 @@ public class FileTypeDetector {
             if (b < 0x20 && b != '\t' && b != '\n' && b != '\r') {
                 return false;
             }
+            // Todo: 等待修正
             if (b > 0x7F && !isValidUtf8Continuation(bytes, i, byteCount)) {
                 return false;
             }
