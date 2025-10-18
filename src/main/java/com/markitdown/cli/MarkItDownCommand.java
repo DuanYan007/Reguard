@@ -342,7 +342,14 @@ public class MarkItDownCommand implements Callable<Integer> {
         // Default: same directory as input with .md extension
         String fileName = inputPath.getFileName().toString();
         String nameWithoutExt = getFileNameWithoutExtension(fileName);
-        return inputPath.getParent().resolve(nameWithoutExt + ".md");
+        Path parentPath = inputPath.getParent();
+
+        if (parentPath != null) {
+            return parentPath.resolve(nameWithoutExt + ".md");
+        } else {
+            // File is in root directory, use current directory
+            return Paths.get(nameWithoutExt + ".md");
+        }
     }
 
     /**
@@ -355,7 +362,10 @@ public class MarkItDownCommand implements Callable<Integer> {
     private void writeResult(ConversionResult result, Path outputPath) throws ConversionException {
         try {
             // Create parent directories if they don't exist
-            Files.createDirectories(outputPath.getParent());
+            Path parentPath = outputPath.getParent();
+            if (parentPath != null) {
+                Files.createDirectories(parentPath);
+            }
 
             // Write the markdown content
             try (FileWriter writer = new FileWriter(outputPath.toFile())) {

@@ -80,17 +80,26 @@ public class MarkItDownEngine {
             // Find appropriate converter
             Optional<DocumentConverter> converterOpt = converterRegistry.getConverter(mimeType);
             if (!converterOpt.isPresent()) {
-                // 这条变量并未实际使用
-                List<DocumentConverter> allConverters = (List<DocumentConverter>) converterRegistry.getAllConverters();
                 String supportedTypes = converterRegistry.getSupportedMimeTypes().toString();
                 String errorMessage = String.format(
                         "No converter found for MIME type '%s'. Supported types: %s",
                         mimeType, supportedTypes);
                 logger.error(errorMessage);
+
+                // Safely get file size and name
+                long fileSize = 0;
+                String fileName = "unknown";
+                try {
+                    fileSize = Files.size(filePath);
+                    fileName = filePath.getFileName().toString();
+                } catch (Exception e) {
+                    logger.warn("Cannot get file info: {}", e.getMessage());
+                }
+
                 return new ConversionResult(
                         List.of(errorMessage),
-                        Files.size(filePath),
-                        filePath.getFileName().toString()
+                        fileSize,
+                        fileName
                 );
             }
 
