@@ -12,12 +12,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * Core engine for document conversion operations.
  *
- * @author MarkItDown Team
+ * @author duan yan
  * @version 1.0.0
  * @since 1.0.0
  */
@@ -79,7 +80,8 @@ public class MarkItDownEngine {
             // Find appropriate converter
             Optional<DocumentConverter> converterOpt = converterRegistry.getConverter(mimeType);
             if (!converterOpt.isPresent()) {
-                List<DocumentConverter> allConverters = converterRegistry.getAllConverters();
+                // 这条变量并未实际使用
+                List<DocumentConverter> allConverters = (List<DocumentConverter>) converterRegistry.getAllConverters();
                 String supportedTypes = converterRegistry.getSupportedMimeTypes().toString();
                 String errorMessage = String.format(
                         "No converter found for MIME type '%s'. Supported types: %s",

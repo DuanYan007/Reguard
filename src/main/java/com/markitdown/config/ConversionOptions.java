@@ -7,10 +7,11 @@ import java.util.Map;
 /**
  * Configuration options for document conversion operations.
  *
- * @author MarkItDown Team
+ * @author duan yan
  * @version 1.0.0
  * @since 1.0.0
  */
+// checked
 public class ConversionOptions {
 
     private boolean includeImages = true;
