@@ -8,7 +8,7 @@ import java.nio.file.Path;
 /**
  * Interface for document converters that can convert various file formats to Markdown.
  *
- * @author MarkItDown Team
+ * @author duan yan
  * @version 1.0.0
  * @since 1.0.0
  */

@@ -3,10 +3,11 @@ package com.markitdown.exception;
 /**
  * Exception thrown when a document conversion operation fails.
  *
- * @author MarkItDown Team
+ * @author duan yan
  * @version 1.0.0
  * @since 1.0.0
  */
+// checked
 public class ConversionException extends Exception {
 
     private final String fileName;

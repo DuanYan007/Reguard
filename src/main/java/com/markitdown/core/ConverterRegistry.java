@@ -7,14 +7,16 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
+// checked
 /**
  * Registry for managing document converters. This class is thread-safe and follows a singleton pattern.
  *
- * @author MarkItDown Team
+ * @author duan yan
  * @version 1.0.0
  * @since 1.0.0
  */
+// 整体的注册机制可以改变，封装成Bean的形式，结合Spring框架
+// 后续扩写可以结合大模型
 public class ConverterRegistry {
 
     private static final Logger logger = LoggerFactory.getLogger(ConverterRegistry.class);

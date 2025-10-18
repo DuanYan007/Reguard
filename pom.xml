@@ -22,17 +22,17 @@
 
     <developers>
         <developer>
-            <name>Your Name</name>
-            <email>your.email@example.com</email>
+            <name>duan yan</name>
+            <email>2907762730@qq.com</email>
             <organization>Open Source Community</organization>
-            <organizationUrl>https://github.com/yourusername</organizationUrl>
+            <organizationUrl>https://github.com/DuanYan007</organizationUrl>
         </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/yourusername/markitdown-java.git</connection>
-        <developerConnection>scm:git:ssh://github.com:yourusername/markitdown-java.git</developerConnection>
-        <url>https://github.com/yourusername/markitdown-java/tree/main</url>
+        <connection>scm:git:git://github.com/DuanYan007/markitdown-java.git</connection>
+        <developerConnection>scm:git:ssh://github.com:DuanYan007/markitdown-java.git</developerConnection>
+        <url>https://github.com/DuanYan007/markitdown-java/tree/main</url>
     </scm>
 
     <properties>

@@ -6,10 +6,11 @@ import java.util.*;
 /**
  * Represents the result of a document conversion operation.
  *
- * @author MarkItDown Team
+ * @author duan yan
  * @version 1.0.0
  * @since 1.0.0
  */
+// checked
 public class ConversionResult {
 
     private final String markdownContent;
