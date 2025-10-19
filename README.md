@@ -25,6 +25,7 @@ MarkItDown Java 是一个功能强大的文档转换工具，支持将多种文�
 | Microsoft Excel | .xlsx, .xls | ✅ 完全支持 |
 | HTML | .html, .htm | ✅ 完全支持 |
 | 图片 (OCR) | .jpg, .jpeg, .png, .gif, .bmp, .tiff, .webp | ✅ 完全支持 |
+| 音频文件 | .mp3, .wav, .ogg, .flac, .m4a, .aac | ✅ 基础支持 |
 | 文本文件 | .txt, .csv, .json, .xml, .md, .log | ✅ 完全支持 |
 
 ## 🚀 快速开始
@@ -105,6 +106,8 @@ src/
 - **Office 文档**: Apache POI 5.2.5
 - **HTML 解析**: jsoup 1.17.2
 - **OCR**: Tess4J 5.8.0
+- **音频处理**: Apache Tika 2.9.1
+- **音频支持**: MP3SPI 1.9.5.4
 - **日志**: SLF4J + Logback
 - **构建工具**: Maven 3.6+
 
@@ -146,6 +149,9 @@ java -jar markitdown-java-1.0.0-SNAPSHOT.jar *.pdf
 
 # 转换多种格式文件
 java -jar markitdown-java-1.0.0-SNAPSHOT.jar *.docx *.pdf *.txt
+
+# 转换音频文件
+java -jar markitdown-java-1.0.0-SNAPSHOT.jar *.mp3 *.wav *.ogg
 
 # 使用通配符转换
 java -jar markitdown-java-1.0.0-SNAPSHOT.jar document.*
@@ -249,6 +255,49 @@ java -jar markitdown-java-1.0.0-SNAPSHOT.jar huge.pdf --max-file-size 104857600
 
 ## 🔍 转换质量示例
 
+### 音频文件转换示例
+
+**输入**: 音频文件
+**输出**:
+```markdown
+# 歌曲名称
+
+## Audio File Information
+
+**File:** `song.mp3`
+
+## Metadata
+
+### File Details
+
+- **File Size:** 4.5 MB
+- **Format:** audio/mp3
+- **detectedMimeType**: audio/mpeg
+
+## Transcription
+
+This audio file contains audio content that could be transcribed to text.
+
+To enable audio transcription, consider integrating with speech-to-text services:
+- Google Speech-to-Text API
+- AWS Transcribe
+- Azure Speech Services
+- OpenAI Whisper API
+- CMU Sphinx (offline)
+
+File path: /path/to/song.mp3
+
+## Notes
+
+*This is an audio file. For actual transcription, integrate with speech-to-text services.*
+
+**Supported transcription services:**
+- Google Speech-to-Text
+- AWS Transcribe
+- Azure Speech Services
+- OpenAI Whisper
+```
+
 ### PDF 转换示例
 **输入**: PDF文档
 **输出**:
@@ -351,6 +400,7 @@ java -jar markitdown-java-1.0.0-SNAPSHOT.jar *.pdf --verbose
 | Excel 支持 | ✅ | ✅ | 完全兼容 |
 | PowerPoint 支持 | ✅ | ✅ | 完全兼容 |
 | OCR 支持 | ✅ | ✅ | 完全兼容 |
+| 音频文件支持 | ❌ | ✅ | 新增功能 |
 | 跨平台 | Windows/Linux | 全平台 | 更好支持 |
 | 命令行 | 基础 | 丰富选项 | 功能更强 |
 | 批处理 | 有限 | 完全支持 | 更灵活 |

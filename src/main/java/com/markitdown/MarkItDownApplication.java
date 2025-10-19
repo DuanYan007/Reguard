@@ -43,6 +43,7 @@ public class MarkItDownApplication {
         registry.registerConverter(new XlsxConverter());
         registry.registerConverter(new HtmlConverter());
         registry.registerConverter(new ImageConverter());
+        registry.registerConverter(new AudioConverter());
         registry.registerConverter(new TextConverter());
 
         return new MarkItDownEngine(registry);

@@ -62,6 +62,19 @@ public class FileTypeDetector {
         EXTENSION_TO_MIME_TYPE.put("epub", "application/epub+zip");
         EXTENSION_TO_MIME_TYPE.put("mobi", "application/x-mobipocket-ebook");
 
+        // Audio files
+        EXTENSION_TO_MIME_TYPE.put("mp3", "audio/mpeg");
+        EXTENSION_TO_MIME_TYPE.put("mp2", "audio/mpeg");
+        EXTENSION_TO_MIME_TYPE.put("wav", "audio/wav");
+        EXTENSION_TO_MIME_TYPE.put("ogg", "audio/ogg");
+        EXTENSION_TO_MIME_TYPE.put("flac", "audio/flac");
+        EXTENSION_TO_MIME_TYPE.put("m4a", "audio/mp4");
+        EXTENSION_TO_MIME_TYPE.put("aac", "audio/aac");
+        EXTENSION_TO_MIME_TYPE.put("wma", "audio/x-ms-wma");
+        EXTENSION_TO_MIME_TYPE.put("opus", "audio/opus");
+        EXTENSION_TO_MIME_TYPE.put("aiff", "audio/aiff");
+        EXTENSION_TO_MIME_TYPE.put("au", "audio/basic");
+
         TEXT_FILE_EXTENSIONS = new HashSet<>(Arrays.asList(
                 "txt", "md", "markdown", "csv", "json", "xml", "html", "htm", "log"
         ));

@@ -1,19 +1,36 @@
 # test
 
-## File Information
+## Audio File Information
 
-- **word count:** 4
-- **file size:** 28
-- **is valid json:** true
-- **format:** json
-- **character count:** 28
-- **line count:** 1
-- **conversion time:** 2025-10-18T22:42:58.521080200
+**File:** `test.ogg`
 
-## Content
+## Metadata
 
-```json
-{"name": "John", "age": 30}
+### File Details
 
-```
+- **File Size:** 73 B
+- **Format:** audio/ogg
+
+## Transcription
+
+This audio file contains audio content that could be transcribed to text.
+
+To enable audio transcription, consider integrating with speech-to-text services:
+- Google Speech-to-Text API
+- AWS Transcribe
+- Azure Speech Services
+- OpenAI Whisper API
+- CMU Sphinx (offline)
+
+File path: test.ogg
+
+## Notes
+
+*This is an audio file. For actual transcription, integrate with speech-to-text services.*
+
+**Supported transcription services:**
+- Google Speech-to-Text
+- AWS Transcribe
+- Azure Speech Services
+- OpenAI Whisper
 
