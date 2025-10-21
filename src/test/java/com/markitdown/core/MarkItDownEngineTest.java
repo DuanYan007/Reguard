@@ -52,6 +52,7 @@ class MarkItDownEngineTest {
         assertTrue(result.getFileSize() > 0);
     }
 
+
     @Test
     void testConvertWithNonExistentFile() {
         Path nonExistentFile = tempDir.resolve("nonexistent.txt");
@@ -74,6 +75,7 @@ class MarkItDownEngineTest {
                 .includeMetadata(false)
                 .maxFileSize(1024)
                 .build();
+
 
         // Convert with custom options
         ConversionResult result = engine.convert(testFile, options);
