@@ -29,7 +29,7 @@ import java.util.concurrent.Callable;
 @Command(
         name = "markitdown",
         mixinStandardHelpOptions = true,
-        version = "MarkItDown Java 1.0.0",
+        version = "MarkItDown-java 1.0.0",
         description = "Convert various document formats to Markdown",
         footerHeading = "Examples:%n",
         footer = {
@@ -220,6 +220,7 @@ public class MarkItDownCommand implements Callable<Integer> {
      *
      * @return configured conversion options
      */
+    // ToDo: 这里的Option设置有点人机
     private ConversionOptions createConversionOptions() {
         ConversionOptions.Builder builder = ConversionOptions.builder();
 
