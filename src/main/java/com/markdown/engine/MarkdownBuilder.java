@@ -405,7 +405,7 @@ public class MarkdownBuilder {
         }
         return "-";
     }
-
+    // 转义防止markdown语法不解析
     private String escapeMarkdown(String text) {
         if (text == null) {
             return "";

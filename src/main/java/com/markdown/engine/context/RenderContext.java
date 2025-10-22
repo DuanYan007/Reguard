@@ -223,7 +223,7 @@ public class RenderContext {
      * @return the new depth value
      */
     public int incrementListDepth() {
-        int currentDepth = getState("listDepth", Integer.class);
+        Integer currentDepth = getState("listDepth", Integer.class);
         if (currentDepth == null) {
             currentDepth = 0;
         }
@@ -238,7 +238,7 @@ public class RenderContext {
      * @return the new depth value
      */
     public int decrementListDepth() {
-        int currentDepth = getState("listDepth", Integer.class);
+        Integer currentDepth = getState("listDepth", Integer.class);
         if (currentDepth == null || currentDepth <= 0) {
             currentDepth = 1;
         }
