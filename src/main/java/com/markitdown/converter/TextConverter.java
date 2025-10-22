@@ -131,6 +131,7 @@ public class TextConverter implements DocumentConverter {
             metadata.put("wordCount", countWords(content));
 
             // Format-specific metadata
+            // ToDo: txt ?
             if ("csv".equals(format)) {
                 extractCsvMetadata(content, metadata);
             } else if ("json".equals(format)) {
@@ -171,6 +172,7 @@ public class TextConverter implements DocumentConverter {
     private void extractJsonMetadata(String content, Map<String, Object> metadata) {
         try {
             // Simple validation - check if it looks like valid JSON
+            // Todo: Json判断需要更加复杂
             String trimmed = content.trim();
             boolean isValidJson = (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
                                  (trimmed.startsWith("[") && trimmed.endsWith("]"));
@@ -189,6 +191,7 @@ public class TextConverter implements DocumentConverter {
     private void extractXmlMetadata(String content, Map<String, Object> metadata) {
         try {
             // Simple validation - check if it looks like valid XML
+            // Todo: Xml格式复杂判断
             String trimmed = content.trim();
             boolean isValidXml = trimmed.startsWith("<") && trimmed.endsWith(">");
             metadata.put("isValidXml", isValidXml);
@@ -221,6 +224,7 @@ public class TextConverter implements DocumentConverter {
         StringBuilder markdown = new StringBuilder();
 
         // Add title if available
+        // Todo: 可以写一个markdown引擎，封装成一个完整对象
         if (options.isIncludeMetadata() && metadata.containsKey("fileName")) {
             String fileName = (String) metadata.get("fileName");
             String title = getFileNameWithoutExtension(fileName);
