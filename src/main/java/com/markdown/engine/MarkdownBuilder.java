@@ -3,13 +3,19 @@ package com.markdown.engine;
 import com.markdown.engine.config.MarkdownConfig;
 import com.markdown.engine.context.RenderContext;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Builder for creating complex Markdown documents step by step.
  * Provides fluent API for building structured markdown content.
+ * This is the core class for Converter integration.
  *
  * @author duan yan
- * @version 1.0.0
- * @since 1.0.0
+ * @version 2.0.0
+ * @since 2.0.0
  */
 public class MarkdownBuilder {
 
@@ -42,6 +48,25 @@ public class MarkdownBuilder {
         this.context = context;
         this.content = new StringBuilder();
     }
+
+    /**
+     * Creates a new markdown builder with specific configuration options for converters.
+     *
+     * @param includeTables    whether to include tables
+     * @param escapeHtml       whether to escape HTML
+     * @param wrapCodeBlocks   whether to wrap code blocks
+     */
+    public MarkdownBuilder(boolean includeTables, boolean escapeHtml, boolean wrapCodeBlocks) {
+        MarkdownConfig config = MarkdownConfig.builder()
+                .includeTables(includeTables)
+                .escapeHtml(escapeHtml)
+                .wrapCodeBlocks(wrapCodeBlocks)
+                .build();
+        this.context = new RenderContext(config);
+        this.content = new StringBuilder();
+    }
+
+    // ==================== Heading Methods ====================
 
     /**
      * Adds a heading.
@@ -79,6 +104,29 @@ public class MarkdownBuilder {
     }
 
     /**
+     * Adds a level 1 heading.
+     */
+    public MarkdownBuilder h1(String text) {
+        return heading(text, 1);
+    }
+
+    /**
+     * Adds a level 2 heading.
+     */
+    public MarkdownBuilder h2(String text) {
+        return heading(text, 2);
+    }
+
+    /**
+     * Adds a level 3 heading.
+     */
+    public MarkdownBuilder h3(String text) {
+        return heading(text, 3);
+    }
+
+    // ==================== Text Methods ====================
+
+    /**
      * Adds a paragraph.
      *
      * @param text the paragraph text
@@ -91,6 +139,13 @@ public class MarkdownBuilder {
                    .append(System.lineSeparator());
         }
         return this;
+    }
+
+    /**
+     * Adds plain text (same as paragraph).
+     */
+    public MarkdownBuilder text(String text) {
+        return paragraph(text);
     }
 
     /**
@@ -145,6 +200,8 @@ public class MarkdownBuilder {
         return this;
     }
 
+    // ==================== Code Block Methods ====================
+
     /**
      * Adds a fenced code block.
      *
@@ -171,21 +228,13 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds a blockquote.
-     *
-     * @param text the quoted text
-     * @return this builder for chaining
+     * Adds a code block without language specification.
      */
-    public MarkdownBuilder blockquote(String text) {
-        if (text != null) {
-            String[] lines = text.split("\\r?\\n");
-            for (String line : lines) {
-                content.append("> ").append(line).append(System.lineSeparator());
-            }
-            content.append(System.lineSeparator());
-        }
-        return this;
+    public MarkdownBuilder codeBlock(String code) {
+        return codeBlock(code, null);
     }
+
+    // ==================== List Methods ====================
 
     /**
      * Adds an unordered list.
@@ -236,7 +285,7 @@ public class MarkdownBuilder {
     /**
      * Adds an ordered list with starting number.
      *
-     * @param items     the list items
+     * @param items      the list items
      * @param startNumber the starting number
      * @return this builder for chaining
      */
@@ -247,9 +296,9 @@ public class MarkdownBuilder {
     /**
      * Adds an ordered list with indentation level and starting number.
      *
-     * @param level      list indentation level (0-based)
+     * @param level       list indentation level (0-based)
      * @param startNumber the starting number
-     * @param items      the list items
+     * @param items       the list items
      * @return this builder for chaining
      */
     public MarkdownBuilder orderedList(int level, int startNumber, String[] items) {
@@ -264,6 +313,71 @@ public class MarkdownBuilder {
                            .append(escapeMarkdown(item.trim()))
                            .append(System.lineSeparator());
                 }
+            }
+            content.append(System.lineSeparator());
+        }
+        return this;
+    }
+
+    // ==================== Table Methods ====================
+
+    /**
+     * Adds a table with headers and rows.
+     *
+     * @param headers table headers
+     * @param rows    table rows (each row is an array of cells)
+     * @return this builder for chaining
+     */
+    public MarkdownBuilder table(String[] headers, String[][] rows) {
+        if (!context.shouldIncludeTables() || headers == null || headers.length == 0) {
+            return this;
+        }
+
+        // Table header
+        content.append("| ");
+        for (int i = 0; i < headers.length; i++) {
+            if (i > 0) content.append(" | ");
+            content.append(escapeMarkdown(headers[i] != null ? headers[i].trim() : ""));
+        }
+        content.append(" |").append(System.lineSeparator());
+
+        // Table separator
+        content.append("|");
+        for (int i = 0; i < headers.length; i++) {
+            content.append("-----|");
+        }
+        content.append(System.lineSeparator());
+
+        // Table rows
+        if (rows != null) {
+            for (String[] row : rows) {
+                content.append("| ");
+                for (int i = 0; i < headers.length; i++) {
+                    if (i > 0) content.append(" | ");
+                    String cell = (row != null && i < row.length) ? row[i] : "";
+                    content.append(escapeMarkdown(cell != null ? cell.trim() : ""));
+                }
+                content.append(" |").append(System.lineSeparator());
+            }
+        }
+
+        content.append(System.lineSeparator());
+        return this;
+    }
+
+    // ==================== Other Elements ====================
+
+    /**
+     * Adds a blockquote.
+     *
+     * @param text the quoted text
+     * @return this builder for chaining
+     */
+    public MarkdownBuilder blockquote(String text) {
+        if (text != null) {
+            String[] lines = text.split("\\r?\\n");
+            for (String line : lines) {
+                content.append("> ").append(line).append(System.lineSeparator());
             }
             content.append(System.lineSeparator());
         }
@@ -331,6 +445,29 @@ public class MarkdownBuilder {
     }
 
     /**
+     * Adds a newline.
+     *
+     * @return this builder for chaining
+     */
+    public MarkdownBuilder newline() {
+        content.append(System.lineSeparator());
+        return this;
+    }
+
+    /**
+     * Adds multiple newlines.
+     *
+     * @param count number of newlines
+     * @return this builder for chaining
+     */
+    public MarkdownBuilder newline(int count) {
+        for (int i = 0; i < count; i++) {
+            content.append(System.lineSeparator());
+        }
+        return this;
+    }
+
+    /**
      * Adds raw text (no escaping).
      *
      * @param text the raw text
@@ -343,18 +480,7 @@ public class MarkdownBuilder {
         return this;
     }
 
-    /**
-     * Adds arbitrary text (with escaping if it's not raw).
-     *
-     * @param text the text
-     * @return this builder for chaining
-     */
-    public MarkdownBuilder text(String text) {
-        if (text != null) {
-            content.append(escapeMarkdown(text));
-        }
-        return this;
-    }
+    // ==================== Utility Methods ====================
 
     /**
      * Builds the final markdown string.
@@ -393,7 +519,250 @@ public class MarkdownBuilder {
         return context;
     }
 
-    // Helper methods
+    // ==================== Document Structure Methods ====================
+
+    /**
+     * Creates a complete document with title, metadata, and content.
+     * This is a convenience method for creating standard document structures.
+     *
+     * @param title    document title
+     * @param metadata document metadata
+     * @param content  document content
+     * @return this builder for chaining
+     */
+    public MarkdownBuilder document(String title, Map<String, Object> metadata, String content) {
+        if (title != null && !title.trim().isEmpty()) {
+            heading(title, 1);
+        }
+
+        if (metadata != null && !metadata.isEmpty()) {
+            heading("Document Information", 2);
+            for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+                if (entry.getValue() != null) {
+                    String key = formatMetadataKey(entry.getKey());
+                    String value = formatMetadataValue(entry.getValue());
+                    text("- **").text(key).text(":** ").text(value).newline();
+                }
+            }
+            newline();
+        }
+
+        if (content != null && !content.trim().isEmpty()) {
+            heading("Content", 2);
+            raw(content).newline();
+        }
+
+        return this;
+    }
+
+    /**
+     * Adds document header with metadata.
+     *
+     * @param title    document title
+     * @param metadata document metadata
+     * @return this builder for chaining
+     */
+    public MarkdownBuilder header(String title, Map<String, Object> metadata) {
+        if (title != null && !title.trim().isEmpty()) {
+            heading(title, 1);
+        }
+
+        if (metadata != null && !metadata.isEmpty()) {
+            heading("Document Information", 2);
+            for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+                if (entry.getValue() != null) {
+                    String key = formatMetadataKey(entry.getKey());
+                    String value = formatMetadataValue(entry.getValue());
+                    text("- **").text(key).text(":** ").text(value).newline();
+                }
+            }
+            newline();
+        }
+
+        return this;
+    }
+
+    /**
+     * Converts a collection to a list and adds it to the builder.
+     *
+     * @param items the items to convert
+     * @return this builder for chaining
+     */
+    public MarkdownBuilder listFromCollection(Collection<String> items) {
+        if (items != null && !items.isEmpty()) {
+            unorderedList(items.toArray(new String[0]));
+        }
+        return this;
+    }
+
+    /**
+     * Converts a map to a table and adds it to the builder.
+     *
+     * @param data the data to convert (key-value pairs)
+     * @return this builder for chaining
+     */
+    public MarkdownBuilder tableFromMap(Map<String, String> data) {
+        if (data != null && !data.isEmpty()) {
+            String[] headers = {"Key", "Value"};
+            String[][] rows = new String[data.size()][2];
+
+            int i = 0;
+            for (Map.Entry<String, String> entry : data.entrySet()) {
+                rows[i][0] = entry.getKey() != null ? entry.getKey() : "";
+                rows[i][1] = entry.getValue() != null ? entry.getValue() : "";
+                i++;
+            }
+
+            table(headers, rows);
+        }
+        return this;
+    }
+
+    /**
+     * Converts a list of maps to a table and adds it to the builder.
+     *
+     * @param headers table headers
+     * @param rows    list of row data (each map represents a row)
+     * @return this builder for chaining
+     */
+    public MarkdownBuilder tableFromList(String[] headers, List<Map<String, String>> rows) {
+        if (headers != null && headers.length > 0 && rows != null && !rows.isEmpty()) {
+            String[][] tableData = new String[rows.size()][headers.length];
+            for (int i = 0; i < rows.size(); i++) {
+                Map<String, String> row = rows.get(i);
+                for (int j = 0; j < headers.length; j++) {
+                    tableData[i][j] = row != null ? row.getOrDefault(headers[j], "") : "";
+                }
+            }
+
+            table(headers, tableData);
+        }
+        return this;
+    }
+
+    /**
+     * Adds multiple paragraphs from an array.
+     *
+     * @param paragraphs the paragraphs to add
+     * @return this builder for chaining
+     */
+    public MarkdownBuilder paragraphs(String... paragraphs) {
+        if (paragraphs != null) {
+            for (String paragraph : paragraphs) {
+                if (paragraph != null && !paragraph.trim().isEmpty()) {
+                    paragraph(paragraph);
+                }
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Appends escaped text to the builder.
+     * This is useful for adding text that may contain special Markdown characters.
+     *
+     * @param text the text to escape and append
+     * @return this builder for chaining
+     */
+    public MarkdownBuilder escaped(String text) {
+        if (text != null) {
+            raw(escapeMarkdown(text));
+        }
+        return this;
+    }
+
+    /**
+     * Appends text with proper Markdown escaping.
+     * Same as escaped() method but with more descriptive name.
+     *
+     * @param text the text to escape and append
+     * @return this builder for chaining
+     */
+    public MarkdownBuilder safeText(String text) {
+        return escaped(text);
+    }
+
+    /**
+     * Validates if the current builder content contains valid Markdown syntax.
+     *
+     * @return true if content appears valid, false otherwise
+     */
+    public boolean isValidContent() {
+        return isValidMarkdown(build());
+    }
+
+    /**
+     * Static utility method to validate Markdown syntax.
+     *
+     * @param markdown the markdown string to validate
+     * @return true if appears valid, false otherwise
+     */
+    public static boolean isValidMarkdown(String markdown) {
+        if (markdown == null) {
+            return false;
+        }
+
+        // Basic validation checks
+        // Check for balanced brackets and parentheses
+        int openBrackets = markdown.length() - markdown.replace("[", "").length();
+        int closeBrackets = markdown.length() - markdown.replace("]", "").length();
+        if (openBrackets != closeBrackets) {
+            return false;
+        }
+
+        int openParens = markdown.length() - markdown.replace("(", "").length();
+        int closeParens = markdown.length() - markdown.replace(")", "").length();
+        if (openParens != closeParens) {
+            return false;
+        }
+
+        // Check for malformed link syntax
+        if (markdown.contains("[](")) {
+            return false;
+        }
+
+        // Check for empty link text
+        if (markdown.matches(".*\\[\\s*\\]\\([^)]*\\).*")) {
+            return false;
+        }
+
+        return true;
+    }
+
+    // ==================== Private Helper Methods ====================
+
+    private String formatMetadataKey(String key) {
+        if (key == null) {
+            return "";
+        }
+        return key.replaceAll("([a-z])([A-Z])", "$1 $2")
+                .replaceAll("^([a-z])", String.valueOf(Character.toUpperCase(key.charAt(0))))
+                .toLowerCase();
+    }
+
+    private String formatMetadataValue(Object value) {
+        if (value == null) {
+            return "";
+        }
+
+        if (value instanceof Date) {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            return sdf.format((Date) value);
+        }
+
+        if (value instanceof Collection) {
+            Collection<?> collection = (Collection<?>) value;
+            return "[" + String.join(", ", collection.stream().map(Object::toString).toArray(String[]::new)) + "]";
+        }
+
+        if (value instanceof Map) {
+            Map<?, ?> map = (Map<?, ?>) value;
+            return String.valueOf(map.size()) + " items";
+        }
+
+        return value.toString();
+    }
+
     private String getListMarker(String listType) {
         String style = context.getListStyle();
         if ("unordered".equals(listType)) {
@@ -405,7 +774,7 @@ public class MarkdownBuilder {
         }
         return "-";
     }
-    // 转义防止markdown语法不解析
+
     private String escapeMarkdown(String text) {
         if (text == null) {
             return "";
