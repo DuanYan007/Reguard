@@ -16,16 +16,24 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Core engine for document conversion operations.
+ * @class MarkItDownEngine
+ * @brief 文档转换核心引擎，提供统一的文档转换服务
+ * @details 作为整个转换系统的主要入口点，集成转换器注册表、文件类型检测
+ *          提供文件验证、转换器选择、异常处理等完整功能
+ *          支持多种配置选项和转换器管理操作
  *
  * @author duan yan
- * @version 1.0.0
- * @since 1.0.0
+ * @version 2.0.0
+ * @since 2.0.0
  */
 public class MarkItDownEngine {
 
     private static final Logger logger = LoggerFactory.getLogger(MarkItDownEngine.class);
 
+    /**
+     * @brief 转换器注册表
+     * @details 管理所有已注册的文档转换器，支持动态查找和选择
+     */
     private final ConverterRegistry converterRegistry;
 
     /**

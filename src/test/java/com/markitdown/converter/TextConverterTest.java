@@ -13,11 +13,15 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for TextConverter.
+ * @class TextConverterTest
+ * @brief TextConverter文本转换器单元测试类
+ * @details 测试文本转换器的各种文件格式转换功能，包括纯文本、CSV、JSON、XML、日志文件等
+ *          验证转换结果、元数据提取、错误处理等功能的正确性
+ *          使用JUnit 5和临时目录进行测试
  *
  * @author duan yan
- * @version 1.0.0
- * @since 1.0.0
+ * @version 2.0.0
+ * @since 2.0.0
  */
 class TextConverterTest {
 

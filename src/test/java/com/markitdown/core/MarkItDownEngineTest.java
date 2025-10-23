@@ -14,11 +14,15 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for MarkItDownEngine.
+ * @class MarkItDownEngineTest
+ * @brief MarkItDown引擎单元测试类
+ * @details 测试核心引擎的文档转换功能，包括文件验证、转换器管理、
+ *          错误处理等核心功能的正确性
+ *          使用JUnit 5和临时目录进行测试
  *
  * @author duan yan
- * @version 1.0.0
- * @since 1.0.0
+ * @version 2.0.0
+ * @since 2.0.0
  */
 class MarkItDownEngineTest {
 

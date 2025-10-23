@@ -18,16 +18,29 @@ import java.util.*;
 import static java.util.Objects.requireNonNull;
 
 /**
- * PDF document converter that extracts text and metadata from PDF files.
+ * @class PdfConverter
+ * @brief PDF文档转换器，用于将PDF文件转换为Markdown格式
+ * @details 使用Apache PDFBox库解析PDF文件，提取文本内容和元数据信息
+ *          支持文档属性提取、文本清理和格式化处理
+ *          保持文档的基本结构和重要信息
  *
  * @author duan yan
- * @version 1.0.0
- * @since 1.0.0
+ * @version 2.0.0
+ * @since 2.0.0
  */
 public class PdfConverter implements DocumentConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(PdfConverter.class);
 
+    /**
+     * @brief 将PDF文件转换为Markdown格式
+     * @details 主转换方法，使用PDFBox解析PDF文档，提取元数据和文本内容
+     *          对提取的文本进行清理和格式化，生成标准Markdown文档
+     * @param filePath 要转换的PDF文件路径，不能为null
+     * @param options  转换选项配置，不能为null
+     * @return ConversionResult 包含Markdown内容、元数据和警告信息的转换结果
+     * @throws ConversionException 当文件读取失败或转换过程中出现错误时抛出
+     */
     @Override
     public ConversionResult convert(Path filePath, ConversionOptions options) throws ConversionException {
         Objects.requireNonNull(filePath, "File path cannot be null");
@@ -58,16 +71,32 @@ public class PdfConverter implements DocumentConverter {
         }
     }
 
+    /**
+     * @brief 检查是否支持指定的MIME类型
+     * @details 判断转换器是否能够处理PDF文档格式
+     * @param mimeType 要检查的MIME类型，不能为null
+     * @return boolean true表示支持该MIME类型，false表示不支持
+     */
     @Override
     public boolean supports(String mimeType) {
         return "application/pdf".equals(mimeType);
     }
 
+    /**
+     * @brief 获取转换器优先级
+     * @details 设置较高的优先级值，确保在多个转换器支持同一类型时优先选择此转换器
+     * @return int 转换器优先级值，设置为100
+     */
     @Override
     public int getPriority() {
         return 100;
     }
 
+    /**
+     * @brief 获取转换器名称
+     * @details 返回转换器的唯一标识名称
+     * @return String 转换器名称
+     */
     @Override
     public String getName() {
         return "PdfConverter";

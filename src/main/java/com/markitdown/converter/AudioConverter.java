@@ -16,16 +16,24 @@ import java.util.*;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Audio converter that processes audio files and converts them to Markdown format.
- * Extracts metadata from audio files and provides transcription support.
+ * @class AudioConverter
+ * @brief 音频文件转换器，用于将音频文件转换为Markdown格式
+ * @details 使用Apache Tika库提取音频文件元数据，支持多种音频格式
+ *          提供转录功能框架，可集成语音转文本服务
+ *          包含文件信息、音频元数据和转录建议的完整文档结构
  *
  * @author duan yan
- * @version 1.0.0
- * @since 1.0.0
+ * @version 2.0.0
+ * @since 2.0.0
  */
 public class AudioConverter implements DocumentConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(AudioConverter.class);
+
+    /**
+     * @brief 支持的音频格式集合
+     * @details 包含所有此转换器支持的音频文件扩展名
+     */
     private static final Set<String> SUPPORTED_FORMATS = Set.of("mp3", "wav", "ogg", "flac", "m4a", "aac");
 
     @Override

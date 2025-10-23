@@ -18,11 +18,15 @@ import java.util.*;
 import static java.util.Objects.requireNonNull;
 
 /**
- * PowerPoint document converter that extracts text and structure from PPTX files.
+ * @class PptxConverter
+ * @brief PowerPoint文档转换器，用于将PPTX文件转换为Markdown格式
+ * @details 使用Apache POI库解析PowerPoint文档，提取幻灯片内容和结构信息
+ *          支持文本格式、表格、分组形状等元素的转换
+ *          保持演示文稿的幻灯片顺序和层次结构
  *
  * @author duan yan
- * @version 1.0.0
- * @since 1.0.0
+ * @version 2.0.0
+ * @since 2.0.0
  */
 public class PptxConverter implements DocumentConverter {
 

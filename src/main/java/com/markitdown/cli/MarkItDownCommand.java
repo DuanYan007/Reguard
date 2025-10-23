@@ -20,24 +20,28 @@ import java.nio.file.Paths;
 import java.util.concurrent.Callable;
 
 /**
- * Command-line interface for MarkItDown Java.
+ * @class MarkItDownCommand
+ * @brief MarkItDown Java命令行接口类
+ * @details 基于Picocli框架实现的命令行工具，提供文档转换功能
+ *          支持多种输入格式、丰富的配置选项和批量处理
+ *          提供详细的帮助信息和错误处理机制
  *
  * @author duan yan
- * @version 1.0.0
- * @since 1.0.0
+ * @version 2.0.0
+ * @since 2.0.0
  */
 @Command(
         name = "markitdown",
         mixinStandardHelpOptions = true,
-        version = "MarkItDown-java 1.0.0",
-        description = "Convert various document formats to Markdown",
-        footerHeading = "Examples:%n",
+        version = "MarkItDown-java 2.0.0",
+        description = "将各种文档格式转换为Markdown格式",
+        footerHeading = "示例:%n",
         footer = {
-                "  markitdown document.pdf                    # Convert PDF to markdown",
-                "  markitdown document.docx -o output.md      # Convert Word document to output.md",
-                "  markitdown presentation.pptx --no-tables   # Convert PowerPoint without tables",
-                "  markitdown spreadsheet.xlsx --ocr          # Convert Excel with OCR for images",
-                "  markitdown *.pdf                          # Convert all PDF files in directory"
+                "  markitdown document.pdf                    # 将PDF转换为Markdown",
+                "  markitdown document.docx -o output.md      # 将Word文档转换为output.md",
+                "  markitdown presentation.pptx --no-tables   # 转换PowerPoint不包含表格",
+                "  markitdown spreadsheet.xlsx --ocr          # 转换Excel并对图片使用OCR",
+                "  markitdown *.pdf                          # 转换目录下所有PDF文件"
         }
 )
 public class MarkItDownCommand implements Callable<Integer> {
@@ -201,7 +205,6 @@ public class MarkItDownCommand implements Callable<Integer> {
      */
     private MarkItDownEngine createEngine() {
         ConverterRegistry registry = new ConverterRegistry();
-
         // Register all converters
         registry.registerConverter(new PdfConverter());
         registry.registerConverter(new DocxConverter());
@@ -370,6 +373,7 @@ public class MarkItDownCommand implements Callable<Integer> {
             }
 
             // Write the markdown content
+            // 这里的写对于批量处理不是很明确
             try (FileWriter writer = new FileWriter(outputPath.toFile())) {
                 writer.write(result.getMarkdown());
             }

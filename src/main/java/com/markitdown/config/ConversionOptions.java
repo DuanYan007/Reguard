@@ -5,24 +5,78 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Configuration options for document conversion operations.
+ * @class ConversionOptions
+ * @brief 文档转换配置选项类，控制转换过程的各种行为
+ * @details 提供丰富的配置选项来控制文档转换的各个方面
+ *          包括内容包含策略、格式选项、OCR设置、文件大小限制等
+ *          支持链式调用和Builder模式创建配置实例
  *
  * @author duan yan
- * @version 1.0.0
- * @since 1.0.0
+ * @version 2.0.0
+ * @since 2.0.0
  */
-// checked
 public class ConversionOptions {
 
+    // ==================== 实例变量 ====================
+
+    /**
+     * @brief 是否包含图片内容
+     * @details 控制转换结果中是否包含图片相关信息
+     */
     private boolean includeImages = true;
+
+    /**
+     * @brief 是否包含表格内容
+     * @details 控制转换结果中是否包含表格数据
+     */
     private boolean includeTables = true;
+
+    /**
+     * @brief 是否包含元数据信息
+     * @details 控制转换结果中是否包含文档元数据
+     */
     private boolean includeMetadata = true;
-    private String tableFormat = "github"; // github, markdown, pipe
-    private String imageFormat = "markdown"; // markdown, html, base64
-    private String language = "auto"; // for OCR
-    private long maxFileSize = 50 * 1024 * 1024; // 50MB
+
+    /**
+     * @brief 表格格式配置
+     * @details 指定表格在Markdown中的格式风格，支持github、markdown、pipe三种格式
+     */
+    private String tableFormat = "github";
+
+    /**
+     * @brief 图片格式配置
+     * @details 指定图片在Markdown中的表示方式，支持markdown、html、base64三种格式
+     */
+    private String imageFormat = "markdown";
+
+    /**
+     * @brief OCR语言配置
+     * @details 指定OCR文本识别时使用的语言，默认为auto自动检测
+     */
+    private String language = "auto";
+
+    /**
+     * @brief 最大文件大小限制
+     * @details 设置可转换文件的最大字节大小，默认为50MB
+     */
+    private long maxFileSize = 50 * 1024 * 1024;
+
+    /**
+     * @brief 临时目录配置
+     * @details 指定转换过程中使用的临时目录路径
+     */
     private Path tempDirectory;
+
+    /**
+     * @brief OCR使用配置
+     * @details 控制是否对图片和PDF等文件使用OCR进行文本识别
+     */
     private boolean useOcr = false;
+
+    /**
+     * @brief 自定义选项映射
+     * @details 存储特定转换器的自定义配置选项
+     */
     private Map<String, Object> customOptions = new HashMap<>();
 
     /**

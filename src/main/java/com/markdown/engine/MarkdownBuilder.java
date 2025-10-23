@@ -9,9 +9,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Builder for creating complex Markdown documents step by step.
- * Provides fluent API for building structured markdown content.
- * This is the core class for Converter integration.
+ * @class MarkdownBuilder
+ * @brief Markdown文档构建器，用于Converter集成
+ * @details 提供流畅API创建结构化markdown内容，支持所有常用元素
+ *          包括标题、段落、列表、表格、代码块、链接、图片等
  *
  * @author duan yan
  * @version 2.0.0
@@ -22,17 +23,17 @@ public class MarkdownBuilder {
     private final StringBuilder content;
     private final RenderContext context;
 
-    /**
-     * Creates a new markdown builder with default configuration.
+      /**
+     * @brief 默认构造函数 - 使用默认配置创建构建器
+     * @details 使用MarkdownConfig默认配置创建构建器实例
      */
     public MarkdownBuilder() {
         this(MarkdownConfig.builder().build());
     }
 
     /**
-     * Creates a new markdown builder with specified configuration.
-     *
-     * @param config the rendering configuration
+     * @brief 配置构造函数 - 使用指定配置创建构建器
+     * @param config 渲染配置，不能为null
      */
     public MarkdownBuilder(MarkdownConfig config) {
         this.context = new RenderContext(config);
@@ -40,9 +41,8 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Creates a new markdown builder with the given context.
-     *
-     * @param context the render context
+     * @brief 上下文构造函数 - 使用现有渲染上下文创建构建器
+     * @param context 渲染上下文，不能为null
      */
     public MarkdownBuilder(RenderContext context) {
         this.context = context;
@@ -50,11 +50,10 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Creates a new markdown builder with specific configuration options for converters.
-     *
-     * @param includeTables    whether to include tables
-     * @param escapeHtml       whether to escape HTML
-     * @param wrapCodeBlocks   whether to wrap code blocks
+     * @brief 快速配置构造函数 - 为Converter集成提供便捷配置选项
+     * @param includeTables  是否支持表格
+     * @param escapeHtml     是否转义HTML字符
+     * @param wrapCodeBlocks 是否使用```包装代码块
      */
     public MarkdownBuilder(boolean includeTables, boolean escapeHtml, boolean wrapCodeBlocks) {
         MarkdownConfig config = MarkdownConfig.builder()
@@ -66,14 +65,14 @@ public class MarkdownBuilder {
         this.content = new StringBuilder();
     }
 
-    // ==================== Heading Methods ====================
+    // ==================== 标题方法 ====================
 
     /**
-     * Adds a heading.
-     *
-     * @param text  the heading text
-     * @param level the heading level (1-6)
-     * @return this builder for chaining
+     * @brief 添加标题
+     * @details 添加指定级别的标题，支持ATX和setext两种风格
+     * @param text  标题文本，不能为null或空字符串
+     * @param level 标题级别(1-6)
+     * @return MarkdownBuilder 构建器实例，支持链式调用
      */
     public MarkdownBuilder heading(String text, int level) {
         if (text == null || text.trim().isEmpty()) {
@@ -84,7 +83,7 @@ public class MarkdownBuilder {
         String headingStyle = context.getHeadingStyle();
 
         if ("setext".equals(headingStyle) && safeLevel <= 2) {
-            // Use setext-style headings (underlined)
+            // 使用setext风格标题（下划线）
             content.append(text.trim()).append(System.lineSeparator());
             if (safeLevel == 1) {
                 content.append("=".repeat(text.trim().length()));
@@ -92,7 +91,7 @@ public class MarkdownBuilder {
                 content.append("-".repeat(text.trim().length()));
             }
         } else {
-            // Use ATX-style headings (with #)
+            // 使用ATX风格标题（带#）
             content.append("#".repeat(safeLevel))
                    .append(" ")
                    .append(text.trim());
@@ -104,33 +103,39 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds a level 1 heading.
+     * @brief 添加1级标题
+     * @param text 标题文本
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder h1(String text) {
         return heading(text, 1);
     }
 
     /**
-     * Adds a level 2 heading.
+     * @brief 添加2级标题
+     * @param text 标题文本
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder h2(String text) {
         return heading(text, 2);
     }
 
     /**
-     * Adds a level 3 heading.
+     * @brief 添加3级标题
+     * @param text 标题文本
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder h3(String text) {
         return heading(text, 3);
     }
 
-    // ==================== Text Methods ====================
+    // ==================== 文本方法 ====================
 
     /**
-     * Adds a paragraph.
-     *
-     * @param text the paragraph text
-     * @return this builder for chaining
+     * @brief 添加段落
+     * @details 添加段落到文档中，自动进行特殊字符转义
+     * @param text 段落文本
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder paragraph(String text) {
         if (text != null && !text.trim().isEmpty()) {
@@ -142,17 +147,20 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds plain text (same as paragraph).
+     * @brief 添加纯文本
+     * @details 与paragraph()方法功能相同，提供别名方便使用
+     * @param text 文本内容
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder text(String text) {
         return paragraph(text);
     }
 
     /**
-     * Adds bold text.
-     *
-     * @param text the text to make bold
-     * @return this builder for chaining
+     * @brief 添加粗体文本
+     * @details 使用**包裹文本实现粗体效果
+     * @param text 需要加粗的文本
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder bold(String text) {
         if (text != null) {
@@ -162,10 +170,10 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds italic text.
-     *
-     * @param text the text to make italic
-     * @return this builder for chaining
+     * @brief 添加斜体文本
+     * @details 使用*包裹文本实现斜体效果
+     * @param text 需要斜体的文本
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder italic(String text) {
         if (text != null) {
@@ -175,10 +183,10 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds strikethrough text.
-     *
-     * @param text the text to strikethrough
-     * @return this builder for chaining
+     * @brief 添加删除线文本
+     * @details 使用~~包裹文本实现删除线效果
+     * @param text 需要添加删除线的文本
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder strikethrough(String text) {
         if (text != null) {
@@ -188,10 +196,10 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds inline code.
-     *
-     * @param text the code text
-     * @return this builder for chaining
+     * @brief 添加行内代码
+     * @details 使用`包裹文本实现行内代码效果
+     * @param text 代码内容
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder inlineCode(String text) {
         if (text != null) {
@@ -200,14 +208,14 @@ public class MarkdownBuilder {
         return this;
     }
 
-    // ==================== Code Block Methods ====================
+    // ==================== 代码块方法 ====================
 
     /**
-     * Adds a fenced code block.
-     *
-     * @param code     the code content
-     * @param language the programming language (optional)
-     * @return this builder for chaining
+     * @brief 添加代码块
+     * @details 添加带语言标识的围栏代码块，支持语法高亮
+     * @param code     代码内容
+     * @param language 编程语言标识，可选
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder codeBlock(String code, String language) {
         if (code != null) {
@@ -228,30 +236,32 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds a code block without language specification.
+     * @brief 添加无语言标识的代码块
+     * @param code 代码内容
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder codeBlock(String code) {
         return codeBlock(code, null);
     }
 
-    // ==================== List Methods ====================
+    // ==================== 列表方法 ====================
 
     /**
-     * Adds an unordered list.
-     *
-     * @param items the list items
-     * @return this builder for chaining
+     * @brief 添加无序列表
+     * @details 添加使用项目符号的无序列表，支持多行文本
+     * @param items 列表项数组
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder unorderedList(String... items) {
         return unorderedList(0, items);
     }
 
     /**
-     * Adds an unordered list with indentation level.
-     *
-     * @param level list indentation level (0-based)
-     * @param items the list items
-     * @return this builder for chaining
+     * @brief 添加带缩进的无序列表
+     * @details 添加指定缩进级别的无序列表，支持嵌套列表
+     * @param level 列表缩进级别(0-起始)
+     * @param items 列表项数组
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder unorderedList(int level, String... items) {
         if (items != null) {
@@ -273,33 +283,33 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds an ordered list.
-     *
-     * @param items the list items
-     * @return this builder for chaining
+     * @brief 添加有序列表
+     * @details 添加从1开始编号的有序列表
+     * @param items 列表项数组
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder orderedList(String[] items) {
         return orderedList(1, items);
     }
 
     /**
-     * Adds an ordered list with starting number.
-     *
-     * @param items      the list items
-     * @param startNumber the starting number
-     * @return this builder for chaining
+     * @brief 添加带起始编号的有序列表
+     * @details 添加指定起始编号的有序列表
+     * @param items      列表项数组
+     * @param startNumber 起始编号
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder orderedList(int startNumber, String[] items) {
         return orderedList(0, startNumber, items);
     }
 
     /**
-     * Adds an ordered list with indentation level and starting number.
-     *
-     * @param level       list indentation level (0-based)
-     * @param startNumber the starting number
-     * @param items       the list items
-     * @return this builder for chaining
+     * @brief 添加带缩进和起始编号的有序列表
+     * @details 添加指定缩进级别和起始编号的有序列表，支持嵌套列表
+     * @param level       列表缩进级别(0-起始)
+     * @param startNumber 起始编号
+     * @param items       列表项数组
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder orderedList(int level, int startNumber, String[] items) {
         if (items != null) {
@@ -319,21 +329,21 @@ public class MarkdownBuilder {
         return this;
     }
 
-    // ==================== Table Methods ====================
+    // ==================== 表格方法 ====================
 
     /**
-     * Adds a table with headers and rows.
-     *
-     * @param headers table headers
-     * @param rows    table rows (each row is an array of cells)
-     * @return this builder for chaining
+     * @brief 添加表格
+     * @details 添加GitHub风格的表格，支持表头和数据行
+     * @param headers 表格标题数组
+     * @param rows    表格数据二维数组，每个子数组代表一行
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder table(String[] headers, String[][] rows) {
         if (!context.shouldIncludeTables() || headers == null || headers.length == 0) {
             return this;
         }
 
-        // Table header
+        // 表格标题行
         content.append("| ");
         for (int i = 0; i < headers.length; i++) {
             if (i > 0) content.append(" | ");
@@ -341,14 +351,14 @@ public class MarkdownBuilder {
         }
         content.append(" |").append(System.lineSeparator());
 
-        // Table separator
+        // 表格分隔线
         content.append("|");
         for (int i = 0; i < headers.length; i++) {
             content.append("-----|");
         }
         content.append(System.lineSeparator());
 
-        // Table rows
+        // 表格数据行
         if (rows != null) {
             for (String[] row : rows) {
                 content.append("| ");
@@ -365,13 +375,13 @@ public class MarkdownBuilder {
         return this;
     }
 
-    // ==================== Other Elements ====================
+    // ==================== 其他元素方法 ====================
 
     /**
-     * Adds a blockquote.
-     *
-     * @param text the quoted text
-     * @return this builder for chaining
+     * @brief 添加引用块
+     * @details 添加使用>标记的引用块，支持多行文本
+     * @param text 被引用的文本
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder blockquote(String text) {
         if (text != null) {
@@ -385,9 +395,9 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds a horizontal rule.
-     *
-     * @return this builder for chaining
+     * @brief 添加水平分割线
+     * @details 添加---格式的水平分割线，用于内容分隔
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder horizontalRule() {
         content.append("---")
@@ -397,11 +407,11 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds a link.
-     *
-     * @param text the link text
-     * @param url  the link URL
-     * @return this builder for chaining
+     * @brief 添加链接
+     * @details 添加[text](url)格式的链接，链接文本会被转义
+     * @param text 链接显示文本
+     * @param url  链接URL，不会被转义
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder link(String text, String url) {
         if (text != null && url != null) {
@@ -412,12 +422,12 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds an image.
-     *
-     * @param altText the alt text for the image
-     * @param url     the image URL
-     * @param title   the image title (optional)
-     * @return this builder for chaining
+     * @brief 添加图片
+     * @details 添加![alt](url)格式的图片，支持标题属性
+     * @param altText 图片的替代文本
+     * @param url     图片URL，不会被转义
+     * @param title   图片标题(可选)
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder image(String altText, String url, String title) {
         if (url != null) {
@@ -435,9 +445,9 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds a line break.
-     *
-     * @return this builder for chaining
+     * @brief 添加换行符
+     * @details 添加两个空格实现的Markdown换行符
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder lineBreak() {
         content.append("  ").append(System.lineSeparator());
@@ -445,9 +455,9 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds a newline.
-     *
-     * @return this builder for chaining
+     * @brief 添加换行符
+     * @details 添加系统换行符
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder newline() {
         content.append(System.lineSeparator());
@@ -455,10 +465,10 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds multiple newlines.
-     *
-     * @param count number of newlines
-     * @return this builder for chaining
+     * @brief 添加多个换行符
+     * @details 添加指定数量的系统换行符
+     * @param count 换行符数量
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder newline(int count) {
         for (int i = 0; i < count; i++) {
@@ -468,10 +478,10 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds raw text (no escaping).
-     *
-     * @param text the raw text
-     * @return this builder for chaining
+     * @brief 添加原始文本
+     * @details 添加不进行任何转义的原始文本
+     * @param text 原始文本内容
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder raw(String text) {
         if (text != null) {
@@ -480,21 +490,21 @@ public class MarkdownBuilder {
         return this;
     }
 
-    // ==================== Utility Methods ====================
+    // ==================== 工具方法 ====================
 
     /**
-     * Builds the final markdown string.
-     *
-     * @return the complete markdown content
+     * @brief 构建最终内容
+     * @details 将当前构建器中的所有内容合并成完整的Markdown字符串
+     * @return String 完整的markdown内容
      */
     public String build() {
         return content.toString();
     }
 
     /**
-     * Clears the builder for reuse.
-     *
-     * @return this builder for chaining
+     * @brief 清空构建器
+     * @details 清空当前构建器内容，但保留上下文中的输出内容
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder clear() {
         content.setLength(0);
@@ -502,33 +512,74 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Gets the current content length.
-     *
-     * @return current content length
+     * @brief 输出到上下文并清空构建器
+     * @details 将当前内容输出到渲染上下文并清空构建器，用于内存管理
+     * @return String 输出的内容字符串
+     */
+    public String flush() {
+        String flushedContent = content.toString();
+        context.getOutput().append(flushedContent);
+        content.setLength(0);
+        return flushedContent;
+    }
+
+    /**
+     * @brief 获取累积内容
+     * @details 获取所有已输出到上下文的内容，包括当前构建器内容
+     * @return String 所有累积的完整内容
+     */
+    public String getAccumulatedContent() {
+        String currentContent = content.toString();
+        String contextContent = context.getOutput().toString();
+        return contextContent + currentContent;
+    }
+
+    /**
+     * @brief 获取已输出内容
+     * @details 获取仅已输出到上下文的内容，不包括当前构建器内容
+     * @return String 已输出的内容
+     */
+    public String getFlushedContent() {
+        return context.getOutput().toString();
+    }
+
+    /**
+     * @brief 重置所有内容
+     * @details 清空构建器和上下文的所有内容
+     * @return MarkdownBuilder 构建器实例
+     */
+    public MarkdownBuilder resetAll() {
+        content.setLength(0);
+        context.getOutput().setLength(0);
+        context.reset();
+        return this;
+    }
+
+    /**
+     * @brief 获取当前内容长度
+     * @return int 内容字符数
      */
     public int length() {
         return content.length();
     }
 
     /**
-     * Gets the render context.
-     *
-     * @return the render context
+     * @brief 获取渲染上下文
+     * @return RenderContext 渲染上下文实例
      */
     public RenderContext getContext() {
         return context;
     }
 
-    // ==================== Document Structure Methods ====================
+    // ==================== 文档结构方法 ====================
 
     /**
-     * Creates a complete document with title, metadata, and content.
-     * This is a convenience method for creating standard document structures.
-     *
-     * @param title    document title
-     * @param metadata document metadata
-     * @param content  document content
-     * @return this builder for chaining
+     * @brief 创建完整文档
+     * @details 创建包含标题、元数据和内容的完整文档结构
+     * @param title    文档标题
+     * @param metadata 文档元数据
+     * @param content  文档内容
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder document(String title, Map<String, Object> metadata, String content) {
         if (title != null && !title.trim().isEmpty()) {
@@ -556,11 +607,11 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds document header with metadata.
-     *
-     * @param title    document title
-     * @param metadata document metadata
-     * @return this builder for chaining
+     * @brief 添加文档头部
+     * @details 添加文档标题和元数据信息
+     * @param title    文档标题
+     * @param metadata 文档元数据
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder header(String title, Map<String, Object> metadata) {
         if (title != null && !title.trim().isEmpty()) {
@@ -583,10 +634,10 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Converts a collection to a list and adds it to the builder.
-     *
-     * @param items the items to convert
-     * @return this builder for chaining
+     * @brief 从集合添加列表
+     * @details 将集合转换为Markdown列表并添加到构建器
+     * @param items 集合中的项目
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder listFromCollection(Collection<String> items) {
         if (items != null && !items.isEmpty()) {
@@ -596,10 +647,10 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Converts a map to a table and adds it to the builder.
-     *
-     * @param data the data to convert (key-value pairs)
-     * @return this builder for chaining
+     * @brief 从映射添加表格
+     * @details 将键值对映射转换为两列表格并添加到构建器
+     * @param data 键值对映射数据
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder tableFromMap(Map<String, String> data) {
         if (data != null && !data.isEmpty()) {
@@ -619,11 +670,11 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Converts a list of maps to a table and adds it to the builder.
-     *
-     * @param headers table headers
-     * @param rows    list of row data (each map represents a row)
-     * @return this builder for chaining
+     * @brief 从映射列表添加表格
+     * @details 将映射列表转换为表格并添加到构建器
+     * @param headers 表格标题数组
+     * @param rows    行数据列表，每个映射代表一行
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder tableFromList(String[] headers, List<Map<String, String>> rows) {
         if (headers != null && headers.length > 0 && rows != null && !rows.isEmpty()) {
@@ -641,10 +692,10 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Adds multiple paragraphs from an array.
-     *
-     * @param paragraphs the paragraphs to add
-     * @return this builder for chaining
+     * @brief 添加多个段落
+     * @details 从数组添加多个段落到构建器
+     * @param paragraphs 段落数组
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder paragraphs(String... paragraphs) {
         if (paragraphs != null) {
@@ -658,11 +709,10 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Appends escaped text to the builder.
-     * This is useful for adding text that may contain special Markdown characters.
-     *
-     * @param text the text to escape and append
-     * @return this builder for chaining
+     * @brief 添加转义文本
+     * @details 添加经过Markdown特殊字符转义的文本
+     * @param text 需要转义的文本
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder escaped(String text) {
         if (text != null) {
@@ -672,30 +722,29 @@ public class MarkdownBuilder {
     }
 
     /**
-     * Appends text with proper Markdown escaping.
-     * Same as escaped() method but with more descriptive name.
-     *
-     * @param text the text to escape and append
-     * @return this builder for chaining
+     * @brief 添加安全文本
+     * @details 与escaped()方法功能相同，提供更直观的命名
+     * @param text 需要转义的文本
+     * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder safeText(String text) {
         return escaped(text);
     }
 
     /**
-     * Validates if the current builder content contains valid Markdown syntax.
-     *
-     * @return true if content appears valid, false otherwise
+     * @brief 验证当前内容
+     * @details 验证当前构建器内容是否包含有效的Markdown语法
+     * @return boolean 是否有效
      */
     public boolean isValidContent() {
         return isValidMarkdown(build());
     }
 
     /**
-     * Static utility method to validate Markdown syntax.
-     *
-     * @param markdown the markdown string to validate
-     * @return true if appears valid, false otherwise
+     * @brief 静态验证Markdown语法
+     * @details 验证指定字符串是否包含有效的Markdown语法
+     * @param markdown 要验证的Markdown字符串
+     * @return boolean 是否有效
      */
     public static boolean isValidMarkdown(String markdown) {
         if (markdown == null) {
@@ -729,8 +778,14 @@ public class MarkdownBuilder {
         return true;
     }
 
-    // ==================== Private Helper Methods ====================
+    // ==================== 私有辅助方法 ====================
 
+    /**
+     * @brief 格式化元数据键名
+     * @details 将驼峰命名转换为可读格式
+     * @param key 元数据键名
+     * @return String 格式化后的键名
+     */
     private String formatMetadataKey(String key) {
         if (key == null) {
             return "";
@@ -740,6 +795,12 @@ public class MarkdownBuilder {
                 .toLowerCase();
     }
 
+    /**
+     * @brief 格式化元数据值
+     * @details 将不同类型的对象转换为字符串表示
+     * @param value 元数据值
+     * @return String 格式化后的字符串
+     */
     private String formatMetadataValue(Object value) {
         if (value == null) {
             return "";
@@ -763,6 +824,12 @@ public class MarkdownBuilder {
         return value.toString();
     }
 
+    /**
+     * @brief 获取列表标记
+     * @details 根据配置返回列表标记符号
+     * @param listType 列表类型
+     * @return String 列表标记符号
+     */
     private String getListMarker(String listType) {
         String style = context.getListStyle();
         if ("unordered".equals(listType)) {
@@ -775,6 +842,12 @@ public class MarkdownBuilder {
         return "-";
     }
 
+    /**
+     * @brief 转义Markdown特殊字符
+     * @details 转义Markdown中的特殊字符，避免语法错误
+     * @param text 要转义的文本
+     * @return String 转义后的文本
+     */
     private String escapeMarkdown(String text) {
         if (text == null) {
             return "";
@@ -799,6 +872,12 @@ public class MarkdownBuilder {
                   .replace("!", "\\!");
     }
 
+    /**
+     * @brief 转义行内代码特殊字符
+     * @details 为行内代码转义反引号和反斜杠
+     * @param text 要转义的代码文本
+     * @return String 转义后的文本
+     */
     private String escapeCodeInline(String text) {
         if (text == null) {
             return "";

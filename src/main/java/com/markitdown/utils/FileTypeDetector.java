@@ -6,16 +6,30 @@ import java.nio.file.Path;
 import java.util.*;
 
 /**
- * Utility class for detecting file types and MIME types based on file extensions and content.
+ * @class FileTypeDetector
+ * @brief 文件类型检测工具类，基于文件扩展名和内容检测文件类型
+ * @details 提供MIME类型检测、文本文件识别、文件扩展名处理等功能
+ *          支持多种文件格式的检测，包括文档、图片、音频、压缩包等
+ *          使用文件签名和内容分析提高检测准确性
  *
  * @author duan yan
- * @version 1.0.0
- * @since 1.0.0
+ * @version 2.0.0
+ * @since 2.0.0
  */
-// checked
 public class FileTypeDetector {
 
+    // ==================== 静态常量 ====================
+
+    /**
+     * @brief 文件扩展名到MIME类型的映射
+     * @details 存储常见文件格式的MIME类型映射关系
+     */
     private static final Map<String, String> EXTENSION_TO_MIME_TYPE;
+
+    /**
+     * @brief 文本文件扩展名集合
+     * @details 包含所有可识别为文本文件的扩展名
+     */
     private static final Set<String> TEXT_FILE_EXTENSIONS;
 
     static {

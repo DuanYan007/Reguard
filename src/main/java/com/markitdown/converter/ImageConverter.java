@@ -21,30 +21,44 @@ import java.util.*;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Image converter that extracts text from images using OCR (Optical Character Recognition).
+ * @class ImageConverter
+ * @brief 图片转换器，用于从图片文件中提取文本信息
+ * @details 使用Tesseract OCR引擎进行光学字符识别，支持多种图片格式
+ *          提取图片元数据、尺寸信息和OCR识别文本
+ *          支持多语言识别和文本清理优化
  *
  * @author duan yan
- * @version 1.0.0
- * @since 1.0.0
+ * @version 2.0.0
+ * @since 2.0.0
  */
 public class ImageConverter implements DocumentConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(ImageConverter.class);
+
+    /**
+     * @brief 支持的图片格式集合
+     * @details 包含所有此转换器支持的图片文件扩展名
+     */
     private static final Set<String> SUPPORTED_FORMATS = Set.of("png", "jpg", "jpeg", "gif", "bmp", "tiff", "tif");
 
+    /**
+     * @brief Tesseract OCR引擎实例
+     * @details 用于执行光学字符识别的核心引擎
+     */
     private final ITesseract tesseract;
 
     /**
-     * Creates a new ImageConverter with default Tesseract instance.
+     * @brief 构造函数 - 创建使用默认Tesseract实例的转换器
+     * @details 使用默认配置的Tesseract OCR引擎
      */
     public ImageConverter() {
         this.tesseract = new Tesseract();
     }
 
     /**
-     * Creates a new ImageConverter with custom Tesseract instance.
-     *
-     * @param tesseract the Tesseract OCR engine
+     * @brief 构造函数 - 创建使用自定义Tesseract实例的转换器
+     * @details 允许注入自定义配置的Tesseract OCR引擎实例
+     * @param tesseract Tesseract OCR引擎实例，不能为null
      */
     public ImageConverter(ITesseract tesseract) {
         this.tesseract = requireNonNull(tesseract, "Tesseract instance cannot be null");

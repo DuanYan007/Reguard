@@ -1,5 +1,7 @@
 package com.markitdown.converter;
 
+import com.markdown.engine.MarkdownBuilder;
+import com.markdown.engine.config.MarkdownConfig;
 import com.markitdown.api.ConversionResult;
 import com.markitdown.api.DocumentConverter;
 import com.markitdown.config.ConversionOptions;
@@ -28,12 +30,16 @@ public class XlsxConverter implements DocumentConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(XlsxConverter.class);
 
+    private MarkdownBuilder markdownBuilder;
+
     @Override
     public ConversionResult convert(Path filePath, ConversionOptions options) throws ConversionException {
         requireNonNull(filePath, "File path cannot be null");
         requireNonNull(options, "Conversion options cannot be null");
 
         logger.info("Converting XLSX file: {}", filePath);
+        // ToDo: MarkdownConfig 并未和 Conversion Options 共享元素，待解决
+        markdownBuilder = new MarkdownBuilder(new MarkdownConfig());
 
         try (FileInputStream fis = new FileInputStream(filePath.toFile());
              Workbook workbook = WorkbookFactory.create(fis)) {
