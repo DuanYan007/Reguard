@@ -34,7 +34,7 @@ public class XlsxConverter implements DocumentConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(XlsxConverter.class);
 
-    private MarkdownBuilder markdownBuilder;
+    private MarkdownBuilder mb;
 
     @Override
     public ConversionResult convert(Path filePath, ConversionOptions options) throws ConversionException {
@@ -43,7 +43,7 @@ public class XlsxConverter implements DocumentConverter {
 
         logger.info("正在转换XLSX文件: {}", filePath);
         // ToDo: MarkdownConfig 并未和 Conversion Options 共享元素，待解决
-        markdownBuilder = new MarkdownBuilder(new MarkdownConfig());
+        mb = new MarkdownBuilder(new MarkdownConfig());
 
         try (FileInputStream fis = new FileInputStream(filePath.toFile());
              Workbook workbook = WorkbookFactory.create(fis)) {
@@ -141,34 +141,33 @@ public class XlsxConverter implements DocumentConverter {
         if (options.isIncludeMetadata() && metadata.containsKey("title")) {
             String title = (String) metadata.get("title");
             if (title != null && !title.trim().isEmpty()) {
-                markdownBuilder.heading(title.trim(), 1);
+                mb.append(mb.h1(mb.escapeMarkdown(title.trim())));
             }
         }
-
         // 如果启用则添加元数据部分
         if (options.isIncludeMetadata() && !metadata.isEmpty()) {
-            markdownBuilder.heading("工作簿信息", 2);
+            mb.append(mb.h2("工作簿信息"));
+            List<StringBuilder> meta = new ArrayList<>();
             for (Map.Entry<String, Object> entry : metadata.entrySet()) {
                 if (entry.getValue() != null) {
                     String tile = formatMetadataKey(entry.getKey());
                     // Todo: 关于元数据中的对象 ?
                     String value = entry.getValue().toString();
-
-                    markdown.append("- **").append()
-                            .append(":** ").append().append("\n");
-
+                    meta.add(new StringBuilder().append("**").append(tile).append(":** ").append(value));
                 }
             }
-            markdown.append("\n");
+            // Todo: 这里可能有问题，需要排查
+            mb.append(mb.unorderedList(meta.toArray(new StringBuilder[meta.size()])));
+            mb.newline();
         }
 
         // 处理所有工作表
         for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
             Sheet sheet = workbook.getSheetAt(i);
-            processSheet(sheet, i + 1, markdown, options);
+            processSheet(sheet, i + 1, options);
         }
 
-        return markdown.toString();
+        return mb.flush();
     }
 
     /**
@@ -176,15 +175,14 @@ public class XlsxConverter implements DocumentConverter {
      *
      * @param sheet    要处理的工作表对象
      * @param sheetNum 工作表编号（从1开始）
-     * @param markdown Markdown输出构建器
      * @param options  转换选项配置
      */
-    private void processSheet(Sheet sheet, int sheetNum, StringBuilder markdown, ConversionOptions options) {
+    private void processSheet(Sheet sheet, int sheetNum, ConversionOptions options) {
         String sheetName = sheet.getSheetName();
-        markdown.append("## Sheet ").append(sheetNum).append(": ").append(sheetName).append("\n\n");
-
+        mb.append(mb.h2("Sheet " + sheetNum + ": ") + sheetName);
         if (!options.isIncludeTables()) {
-            markdown.append("*表格功能在转换选项中被禁用*\n\n");
+            mb.append(mb.italic("表格功能在转换选项中被禁用"));
+            mb.newline(2);
             return;
         }
 
@@ -193,7 +191,9 @@ public class XlsxConverter implements DocumentConverter {
         int lastRow = sheet.getLastRowNum();
 
         if (firstRow < 0 || lastRow < 0 || lastRow < firstRow) {
-            markdown.append("*空工作表*\n\n---\n\n");
+            mb.append(mb.italic("空工作表"));
+            mb.newline(2);
+            mb.horizontalRule();
             return;
         }
 
@@ -202,12 +202,12 @@ public class XlsxConverter implements DocumentConverter {
 
         // 处理数据
         if (hasHeader) {
-            processTableWithHeader(sheet, firstRow, lastRow, markdown, options);
+            processTableWithHeader(sheet, firstRow, lastRow, options);
         } else {
-            processTableWithoutHeader(sheet, firstRow, lastRow, markdown, options);
+            processTableWithoutHeader(sheet, firstRow, lastRow, options);
         }
 
-        markdown.append("---\n\n");
+        mb.horizontalRule();
     }
 
     /**
@@ -249,11 +249,11 @@ public class XlsxConverter implements DocumentConverter {
      * @param sheet    包含表格的工作表对象
      * @param firstRow 第一行的索引
      * @param lastRow  最后一行的索引
-     * @param markdown Markdown输出构建器
      * @param options  转换选项配置
      */
-    private void processTableWithHeader(Sheet sheet, int firstRow, int lastRow,
-                                       StringBuilder markdown, ConversionOptions options) {
+    // Todo: 改到这里了
+    private void processTableWithHeader(Sheet sheet, int firstRow, int lastRow
+                                       , ConversionOptions options) {
         // 处理表头行
         Row headerRow = sheet.getRow(firstRow);
         if (headerRow != null) {
@@ -294,11 +294,10 @@ public class XlsxConverter implements DocumentConverter {
      * @param sheet    包含表格的工作表对象
      * @param firstRow 第一行的索引
      * @param lastRow  最后一行的索引
-     * @param markdown Markdown输出构建器
      * @param options  转换选项配置
      */
-    private void processTableWithoutHeader(Sheet sheet, int firstRow, int lastRow,
-                                         StringBuilder markdown, ConversionOptions options) {
+    private void processTableWithoutHeader(Sheet sheet, int firstRow, int lastRow
+                                         , ConversionOptions options) {
         // 将所有行作为数据处理
         for (int rowNum = firstRow; rowNum <= lastRow; rowNum++) {
             Row row = sheet.getRow(rowNum);

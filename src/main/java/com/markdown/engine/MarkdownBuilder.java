@@ -75,6 +75,11 @@ public class MarkdownBuilder {
         return this;
     }
 
+    public MarkdownBuilder append(StringBuilder text) {
+        content.append(text);
+        return this;
+    }
+
     // ==================== 标题方法 ====================
 
     /**
@@ -271,7 +276,7 @@ public class MarkdownBuilder {
      * @param items 列表项数组
      * @return MarkdownBuilder 构建器实例
      */
-    public StringBuilder unorderedList(String... items) {
+    public StringBuilder unorderedList(StringBuilder... items) {
         return unorderedList(0, items);
     }
 
@@ -282,18 +287,18 @@ public class MarkdownBuilder {
      * @param items 列表项数组
      * @return MarkdownBuilder 构建器实例
      */
-    public StringBuilder unorderedList(int level, String... items) {
+    public StringBuilder unorderedList(int level, StringBuilder... items) {
         StringBuilder ans = new StringBuilder();
         if (items != null) {
             String marker = getListMarker("unordered");
             String indent = "  ".repeat(level);
 
-            for (String item : items) {
-                if (item != null && !item.trim().isEmpty()) {
+            for (StringBuilder item : items) {
+                if (item != null && !item.isEmpty()) {
                     ans.append(indent)
                            .append(marker)
                            .append(" ")
-                           .append(item.trim())
+                           .append(item)
                            .append(System.lineSeparator());
                 }
             }
@@ -663,12 +668,12 @@ public class MarkdownBuilder {
      * @param items 集合中的项目
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder listFromCollection(Collection<String> items) {
-        if (items != null && !items.isEmpty()) {
-            unorderedList(items.toArray(new String[0]));
-        }
-        return this;
-    }
+//    public MarkdownBuilder listFromCollection(Collection<String> items) {
+//        if (items != null && !items.isEmpty()) {
+//            unorderedList(items.toArray(new String[0]));
+//        }
+//        return this;
+//    }
 
     /**
      * @brief 从映射添加表格
@@ -873,7 +878,7 @@ public class MarkdownBuilder {
      * @param text 要转义的文本
      * @return String 转义后的文本
      */
-    private String escapeMarkdown(String text) {
+    public String escapeMarkdown(String text) {
         if (text == null) {
             return "";
         }
