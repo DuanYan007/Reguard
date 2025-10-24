@@ -20,11 +20,15 @@ import java.util.*;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Excel spreadsheet converter that extracts data and structure from XLSX files.
+ * @class XlsxConverter
+ * @brief Excel电子表格转换器，用于将XLSX文件转换为Markdown格式
+ * @details 使用Apache POI库解析Excel工作簿，提取工作表数据和结构信息
+ *          支持多工作表处理、自动表头检测、数据类型转换等功能
+ *          将表格数据转换为标准Markdown表格格式
  *
  * @author duan yan
- * @version 1.0.0
- * @since 1.0.0
+ * @version 2.0.0
+ * @since 2.0.0
  */
 public class XlsxConverter implements DocumentConverter {
 
@@ -34,20 +38,20 @@ public class XlsxConverter implements DocumentConverter {
 
     @Override
     public ConversionResult convert(Path filePath, ConversionOptions options) throws ConversionException {
-        requireNonNull(filePath, "File path cannot be null");
-        requireNonNull(options, "Conversion options cannot be null");
+        requireNonNull(filePath, "文件路径不能为空");
+        requireNonNull(options, "转换选项不能为空");
 
-        logger.info("Converting XLSX file: {}", filePath);
+        logger.info("正在转换XLSX文件: {}", filePath);
         // ToDo: MarkdownConfig 并未和 Conversion Options 共享元素，待解决
         markdownBuilder = new MarkdownBuilder(new MarkdownConfig());
 
         try (FileInputStream fis = new FileInputStream(filePath.toFile());
              Workbook workbook = WorkbookFactory.create(fis)) {
 
-            // Extract metadata
+            // 提取元数据
             Map<String, Object> metadata = extractMetadata(workbook, options);
 
-            // Convert workbook to Markdown
+            // 将工作簿转换为Markdown格式
             String markdownContent = convertToMarkdown(workbook, metadata, options);
 
             List<String> warnings = new ArrayList<>();
@@ -56,7 +60,7 @@ public class XlsxConverter implements DocumentConverter {
                     filePath.toFile().length(), filePath.getFileName().toString());
 
         } catch (IOException e) {
-            String errorMessage = "Failed to process XLSX file: " + e.getMessage();
+            String errorMessage = "处理XLSX文件失败: " + e.getMessage();
             logger.error(errorMessage, e);
             throw new ConversionException(errorMessage, e, filePath.getFileName().toString(), getName());
         }
@@ -80,38 +84,39 @@ public class XlsxConverter implements DocumentConverter {
     }
 
     /**
-     * Extracts metadata from the Excel workbook.
+     * 从Excel工作簿中提取元数据信息
      *
-     * @param workbook the Excel workbook
-     * @param options  conversion options
-     * @return metadata map
+     * @param workbook Excel工作簿对象
+     * @param options  转换选项配置
+     * @return 包含元数据信息的映射表
      */
     private Map<String, Object> extractMetadata(Workbook workbook, ConversionOptions options) {
         Map<String, Object> metadata = new HashMap<>();
 
         if (options.isIncludeMetadata()) {
-            // Workbook statistics
-            metadata.put("sheetCount", workbook.getNumberOfSheets());
-            metadata.put("activeSheet", workbook.getActiveSheetIndex());
-            metadata.put("conversionTime", LocalDateTime.now());
+            // 工作簿统计信息
+            metadata.put("工作表数量", workbook.getNumberOfSheets());
+            metadata.put("当前工作表索引(0为起始索引)", workbook.getActiveSheetIndex());
+            metadata.put("转换时刻", LocalDateTime.now());
 
-            // Calculate total cells (approximate)
+            // 计算总单元格数量（近似值）
+            // Todo: 活跃单元格数量有必要统计么?
             int totalCells = 0;
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 Sheet sheet = workbook.getSheetAt(i);
                 totalCells += estimateSheetSize(sheet);
             }
-            metadata.put("estimatedCellCount", totalCells);
+            metadata.put("统计单元格数量", totalCells);
         }
 
         return metadata;
     }
 
     /**
-     * Estimates the number of cells in a sheet.
+     * 估算工作表中的单元格数量
      *
-     * @param sheet the sheet to analyze
-     * @return estimated cell count
+     * @param sheet 要分析的工作表对象
+     * @return 估算的单元格数量
      */
     private int estimateSheetSize(Sheet sheet) {
         int cellCount = 0;
@@ -122,27 +127,27 @@ public class XlsxConverter implements DocumentConverter {
     }
 
     /**
-     * Converts Excel workbook to Markdown format.
+     * 将Excel工作簿转换为Markdown格式内容
      *
-     * @param workbook the Excel workbook
-     * @param metadata the document metadata
-     * @param options  conversion options
-     * @return Markdown formatted content
+     * @param workbook Excel工作簿对象
+     * @param metadata 文档元数据信息
+     * @param options  转换选项配置
+     * @return Markdown格式的内容字符串
      */
     private String convertToMarkdown(Workbook workbook, Map<String, Object> metadata, ConversionOptions options) {
-        StringBuilder markdown = new StringBuilder();
+        // ToDo: 将markdown引擎接入
 
-        // Add title if available
+        // 如果有标题则添加标题
         if (options.isIncludeMetadata() && metadata.containsKey("title")) {
             String title = (String) metadata.get("title");
             if (title != null && !title.trim().isEmpty()) {
-                markdown.append("# ").append(title.trim()).append("\n\n");
+
             }
         }
 
-        // Add metadata section if enabled
+        // 如果启用则添加元数据部分
         if (options.isIncludeMetadata() && !metadata.isEmpty()) {
-            markdown.append("## Workbook Information\n\n");
+            markdown.append("## 工作簿信息\n\n");
             for (Map.Entry<String, Object> entry : metadata.entrySet()) {
                 if (entry.getValue() != null) {
                     markdown.append("- **").append(formatMetadataKey(entry.getKey()))
@@ -152,7 +157,7 @@ public class XlsxConverter implements DocumentConverter {
             markdown.append("\n");
         }
 
-        // Process all sheets
+        // 处理所有工作表
         for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
             Sheet sheet = workbook.getSheetAt(i);
             processSheet(sheet, i + 1, markdown, options);
@@ -162,35 +167,35 @@ public class XlsxConverter implements DocumentConverter {
     }
 
     /**
-     * Processes a single sheet and converts it to Markdown.
+     * 处理单个工作表并将其转换为Markdown格式
      *
-     * @param sheet    the sheet to process
-     * @param sheetNum the sheet number (1-based)
-     * @param markdown the markdown output builder
-     * @param options  conversion options
+     * @param sheet    要处理的工作表对象
+     * @param sheetNum 工作表编号（从1开始）
+     * @param markdown Markdown输出构建器
+     * @param options  转换选项配置
      */
     private void processSheet(Sheet sheet, int sheetNum, StringBuilder markdown, ConversionOptions options) {
         String sheetName = sheet.getSheetName();
         markdown.append("## Sheet ").append(sheetNum).append(": ").append(sheetName).append("\n\n");
 
         if (!options.isIncludeTables()) {
-            markdown.append("*Tables are disabled in conversion options*\n\n");
+            markdown.append("*表格功能在转换选项中被禁用*\n\n");
             return;
         }
 
-        // Find the data range
+        // 查找数据范围
         int firstRow = sheet.getFirstRowNum();
         int lastRow = sheet.getLastRowNum();
 
         if (firstRow < 0 || lastRow < 0 || lastRow < firstRow) {
-            markdown.append("*Empty sheet*\n\n---\n\n");
+            markdown.append("*空工作表*\n\n---\n\n");
             return;
         }
 
-        // Determine if the first row is likely a header
+        // 判断第一行是否可能是表头
         boolean hasHeader = detectHeaderRow(sheet, firstRow);
 
-        // Process the data
+        // 处理数据
         if (hasHeader) {
             processTableWithHeader(sheet, firstRow, lastRow, markdown, options);
         } else {
@@ -201,11 +206,11 @@ public class XlsxConverter implements DocumentConverter {
     }
 
     /**
-     * Detects if the first row is likely a header row.
+     * 检测第一行是否可能是表头行
      *
-     * @param sheet    the sheet to analyze
-     * @param firstRow the first row index
-     * @return true if first row is likely a header
+     * @param sheet    要分析的工作表对象
+     * @param firstRow 第一行的索引
+     * @return 如果第一行可能是表头则返回true
      */
     private boolean detectHeaderRow(Sheet sheet, int firstRow) {
         Row firstRowData = sheet.getRow(firstRow);
@@ -229,22 +234,22 @@ public class XlsxConverter implements DocumentConverter {
             }
         }
 
-        // Consider it a header if most cells are non-empty and many are strings
+        // 如果大多数单元格非空且许多是字符串，则认为是表头
         return totalCells > 0 && (double) nonEmptyCells / totalCells > 0.7 && (double) stringCells / totalCells > 0.5;
     }
 
     /**
-     * Processes a table with a header row.
+     * 处理带表头行的表格
      *
-     * @param sheet    the sheet containing the table
-     * @param firstRow the first row index
-     * @param lastRow  the last row index
-     * @param markdown the markdown output builder
-     * @param options  conversion options
+     * @param sheet    包含表格的工作表对象
+     * @param firstRow 第一行的索引
+     * @param lastRow  最后一行的索引
+     * @param markdown Markdown输出构建器
+     * @param options  转换选项配置
      */
     private void processTableWithHeader(Sheet sheet, int firstRow, int lastRow,
                                        StringBuilder markdown, ConversionOptions options) {
-        // Process header row
+        // 处理表头行
         Row headerRow = sheet.getRow(firstRow);
         if (headerRow != null) {
             markdown.append("| ");
@@ -254,7 +259,7 @@ public class XlsxConverter implements DocumentConverter {
             }
             markdown.append("\n");
 
-            // Add separator
+            // 添加分隔符
             markdown.append("| ");
             for (int i = 0; i < headerRow.getPhysicalNumberOfCells(); i++) {
                 markdown.append(" --- | ");
@@ -262,7 +267,7 @@ public class XlsxConverter implements DocumentConverter {
             markdown.append("\n");
         }
 
-        // Process data rows
+        // 处理数据行
         for (int rowNum = firstRow + 1; rowNum <= lastRow; rowNum++) {
             Row row = sheet.getRow(rowNum);
             if (row == null) continue;
@@ -279,17 +284,17 @@ public class XlsxConverter implements DocumentConverter {
     }
 
     /**
-     * Processes a table without a header row.
+     * 处理不带表头行的表格
      *
-     * @param sheet    the sheet containing the table
-     * @param firstRow the first row index
-     * @param lastRow  the last row index
-     * @param markdown the markdown output builder
-     * @param options  conversion options
+     * @param sheet    包含表格的工作表对象
+     * @param firstRow 第一行的索引
+     * @param lastRow  最后一行的索引
+     * @param markdown Markdown输出构建器
+     * @param options  转换选项配置
      */
     private void processTableWithoutHeader(Sheet sheet, int firstRow, int lastRow,
                                          StringBuilder markdown, ConversionOptions options) {
-        // Process all rows as data
+        // 将所有行作为数据处理
         for (int rowNum = firstRow; rowNum <= lastRow; rowNum++) {
             Row row = sheet.getRow(rowNum);
             if (row == null) continue;
@@ -306,10 +311,10 @@ public class XlsxConverter implements DocumentConverter {
     }
 
     /**
-     * Converts a cell value to string representation.
+     * 将单元格值转换为字符串表示
      *
-     * @param cell the cell to convert
-     * @return string representation of the cell value
+     * @param cell 要转换的单元格对象
+     * @return 单元格值的字符串表示
      */
     private String getCellValueAsString(Cell cell) {
         if (cell == null || cell.getCellType() == CellType.BLANK) {
@@ -323,7 +328,7 @@ public class XlsxConverter implements DocumentConverter {
                 if (DateUtil.isCellDateFormatted(cell)) {
                     return cell.getDateCellValue().toString();
                 } else {
-                    // Handle large numbers and decimals
+                    // 处理大数和小数
                     double numValue = cell.getNumericCellValue();
                     if (numValue == (long) numValue) {
                         return String.format("%d", (long) numValue);
@@ -335,7 +340,7 @@ public class XlsxConverter implements DocumentConverter {
                 return Boolean.toString(cell.getBooleanCellValue());
             case FORMULA:
                 try {
-                    // Try to evaluate the formula
+                    // 尝试计算公式
                     CellValue evaluatedValue = cell.getSheet().getWorkbook().getCreationHelper()
                             .createFormulaEvaluator().evaluate(cell);
                     if (evaluatedValue != null) {
@@ -360,7 +365,7 @@ public class XlsxConverter implements DocumentConverter {
                         }
                     }
                 } catch (Exception e) {
-                    // If evaluation fails, return the formula itself
+                    // 如果计算失败，返回公式本身
                     return cell.getCellFormula();
                 }
                 return cell.getCellFormula();
@@ -370,13 +375,13 @@ public class XlsxConverter implements DocumentConverter {
     }
 
     /**
-     * Formats metadata keys for display.
+     * 格式化元数据键名以供显示
      *
-     * @param key the metadata key
-     * @return formatted key
+     * @param key 元数据键名
+     * @return 格式化后的键名
      */
     private String formatMetadataKey(String key) {
-        // Convert camelCase to Title Case
+        // 将驼峰命名转换为标题格式
         return key.replaceAll("([a-z])([A-Z])", "$1 $2")
                 .replaceAll("^([a-z])", String.valueOf(Character.toUpperCase(key.charAt(0))))
                 .toLowerCase();
