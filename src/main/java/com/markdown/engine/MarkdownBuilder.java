@@ -21,7 +21,7 @@ import java.util.Map;
 public class MarkdownBuilder {
 
     private final StringBuilder content;
-    private final RenderContext context;
+    private static  RenderContext context;
 
       /**
      * @brief 默认构造函数 - 使用默认配置创建构建器
@@ -65,6 +65,16 @@ public class MarkdownBuilder {
         this.content = new StringBuilder();
     }
 
+    /**
+     * @brief 直接添加原始文本
+     * @param text
+     * @return
+     */
+    public MarkdownBuilder append(String text) {
+        content.append(text);
+        return this;
+    }
+
     // ==================== 标题方法 ====================
 
     /**
@@ -74,9 +84,10 @@ public class MarkdownBuilder {
      * @param level 标题级别(1-6)
      * @return MarkdownBuilder 构建器实例，支持链式调用
      */
-    public MarkdownBuilder heading(String text, int level) {
+    public static StringBuilder heading(String text, int level) {
+        StringBuilder ans = new StringBuilder();
         if (text == null || text.trim().isEmpty()) {
-            return this;
+            return ans;
         }
 
         int safeLevel = Math.max(1, Math.min(6, level));
@@ -84,22 +95,22 @@ public class MarkdownBuilder {
 
         if ("setext".equals(headingStyle) && safeLevel <= 2) {
             // 使用setext风格标题（下划线）
-            content.append(text.trim()).append(System.lineSeparator());
+            ans.append(text.trim()).append(System.lineSeparator());
             if (safeLevel == 1) {
-                content.append("=".repeat(text.trim().length()));
+                ans.append("=".repeat(text.trim().length()));
             } else {
-                content.append("-".repeat(text.trim().length()));
+                ans.append("-".repeat(text.trim().length()));
             }
         } else {
             // 使用ATX风格标题（带#）
-            content.append("#".repeat(safeLevel))
+            ans.append("#".repeat(safeLevel))
                    .append(" ")
                    .append(text.trim());
         }
 
-        content.append(System.lineSeparator())
+        ans.append(System.lineSeparator())
                .append(System.lineSeparator());
-        return this;
+        return ans;
     }
 
     /**
@@ -107,16 +118,16 @@ public class MarkdownBuilder {
      * @param text 标题文本
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder h1(String text) {
+    public StringBuilder h1(String text) {
         return heading(text, 1);
     }
 
     /**
      * @brief 添加2级标题
      * @param text 标题文本
-     * @return MarkdownBuilder 构建器实例
+     * @return StringBuilder 构建器实例
      */
-    public MarkdownBuilder h2(String text) {
+    public StringBuilder h2(String text) {
         return heading(text, 2);
     }
 
@@ -125,7 +136,7 @@ public class MarkdownBuilder {
      * @param text 标题文本
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder h3(String text) {
+    public StringBuilder h3(String text) {
         return heading(text, 3);
     }
 
@@ -137,13 +148,14 @@ public class MarkdownBuilder {
      * @param text 段落文本
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder paragraph(String text) {
+    public StringBuilder paragraph(String text) {
+        StringBuilder ans = new StringBuilder();
         if (text != null && !text.trim().isEmpty()) {
-            content.append(escapeMarkdown(text.trim()))
+            ans.append(text.trim())
                    .append(System.lineSeparator())
                    .append(System.lineSeparator());
         }
-        return this;
+        return ans;
     }
 
     /**
@@ -153,8 +165,10 @@ public class MarkdownBuilder {
      * @return MarkdownBuilder 构建器实例
      */
     public MarkdownBuilder text(String text) {
-        return paragraph(text);
+        content.append(paragraph(text));
+        return this;
     }
+
 
     /**
      * @brief 添加粗体文本
@@ -162,11 +176,12 @@ public class MarkdownBuilder {
      * @param text 需要加粗的文本
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder bold(String text) {
+    public StringBuilder bold(String text) {
+        StringBuilder ans = new StringBuilder();
         if (text != null) {
-            content.append("**").append(escapeMarkdown(text)).append("**");
+            ans.append("**").append(text).append("**");
         }
-        return this;
+        return ans;
     }
 
     /**
@@ -175,11 +190,12 @@ public class MarkdownBuilder {
      * @param text 需要斜体的文本
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder italic(String text) {
+    public StringBuilder italic(String text) {
+        StringBuilder ans = new StringBuilder();
         if (text != null) {
-            content.append("*").append(escapeMarkdown(text)).append("*");
+            ans.append("*").append(text).append("*");
         }
-        return this;
+        return ans;
     }
 
     /**
@@ -188,11 +204,12 @@ public class MarkdownBuilder {
      * @param text 需要添加删除线的文本
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder strikethrough(String text) {
+    public StringBuilder strikethrough(String text) {
+        StringBuilder ans = new StringBuilder();
         if (text != null) {
-            content.append("~~").append(escapeMarkdown(text)).append("~~");
+            ans.append("~~").append(text).append("~~");
         }
-        return this;
+        return ans;
     }
 
     /**
@@ -201,11 +218,12 @@ public class MarkdownBuilder {
      * @param text 代码内容
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder inlineCode(String text) {
+    public StringBuilder inlineCode(String text) {
+        StringBuilder ans = new StringBuilder();
         if (text != null) {
-            content.append("`").append(escapeCodeInline(text)).append("`");
+            ans.append("`").append(text).append("`");
         }
-        return this;
+        return ans;
     }
 
     // ==================== 代码块方法 ====================
@@ -217,22 +235,23 @@ public class MarkdownBuilder {
      * @param language 编程语言标识，可选
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder codeBlock(String code, String language) {
+    public StringBuilder codeBlock(String code, String language) {
+        StringBuilder ans = new StringBuilder();
         if (code != null) {
             if (context.shouldWrapCodeBlocks()) {
-                content.append("```");
+                ans.append("```");
                 if (language != null && !language.trim().isEmpty()) {
-                    content.append(language.trim());
+                    ans.append(language.trim());
                 }
-                content.append(System.lineSeparator());
+                ans.append(System.lineSeparator());
             }
-            content.append(code);
+            ans.append(code);
             if (context.shouldWrapCodeBlocks()) {
-                content.append(System.lineSeparator()).append("```");
+                ans.append(System.lineSeparator()).append("```");
             }
-            content.append(System.lineSeparator()).append(System.lineSeparator());
+            ans.append(System.lineSeparator()).append(System.lineSeparator());
         }
-        return this;
+        return ans;
     }
 
     /**
@@ -240,7 +259,7 @@ public class MarkdownBuilder {
      * @param code 代码内容
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder codeBlock(String code) {
+    public StringBuilder codeBlock(String code) {
         return codeBlock(code, null);
     }
 
@@ -252,7 +271,7 @@ public class MarkdownBuilder {
      * @param items 列表项数组
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder unorderedList(String... items) {
+    public StringBuilder unorderedList(String... items) {
         return unorderedList(0, items);
     }
 
@@ -263,23 +282,24 @@ public class MarkdownBuilder {
      * @param items 列表项数组
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder unorderedList(int level, String... items) {
+    public StringBuilder unorderedList(int level, String... items) {
+        StringBuilder ans = new StringBuilder();
         if (items != null) {
             String marker = getListMarker("unordered");
             String indent = "  ".repeat(level);
 
             for (String item : items) {
                 if (item != null && !item.trim().isEmpty()) {
-                    content.append(indent)
+                    ans.append(indent)
                            .append(marker)
                            .append(" ")
-                           .append(escapeMarkdown(item.trim()))
+                           .append(item.trim())
                            .append(System.lineSeparator());
                 }
             }
-            content.append(System.lineSeparator());
+            ans.append(System.lineSeparator());
         }
-        return this;
+        return ans;
     }
 
     /**
@@ -288,7 +308,7 @@ public class MarkdownBuilder {
      * @param items 列表项数组
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder orderedList(String[] items) {
+    public StringBuilder orderedList(String[] items) {
         return orderedList(1, items);
     }
 
@@ -299,7 +319,7 @@ public class MarkdownBuilder {
      * @param startNumber 起始编号
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder orderedList(int startNumber, String[] items) {
+    public StringBuilder orderedList(int startNumber, String[] items) {
         return orderedList(0, startNumber, items);
     }
 
@@ -311,22 +331,23 @@ public class MarkdownBuilder {
      * @param items       列表项数组
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder orderedList(int level, int startNumber, String[] items) {
+    public StringBuilder orderedList(int level, int startNumber, String[] items) {
+        StringBuilder ans = new StringBuilder();
         if (items != null) {
             String indent = "  ".repeat(level);
 
             for (int i = 0; i < items.length; i++) {
                 String item = items[i];
                 if (item != null && !item.trim().isEmpty()) {
-                    content.append(indent)
+                    ans.append(indent)
                            .append((startNumber + i) + ". ")
-                           .append(escapeMarkdown(item.trim()))
+                           .append(item.trim())
                            .append(System.lineSeparator());
                 }
             }
-            content.append(System.lineSeparator());
+            ans.append(System.lineSeparator());
         }
-        return this;
+        return ans;
     }
 
     // ==================== 表格方法 ====================
@@ -338,41 +359,42 @@ public class MarkdownBuilder {
      * @param rows    表格数据二维数组，每个子数组代表一行
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder table(String[] headers, String[][] rows) {
+    public StringBuilder table(String[] headers, String[][] rows) {
+        StringBuilder ans = new StringBuilder();
         if (!context.shouldIncludeTables() || headers == null || headers.length == 0) {
-            return this;
+            return ans;
         }
 
         // 表格标题行
-        content.append("| ");
+        ans.append("| ");
         for (int i = 0; i < headers.length; i++) {
-            if (i > 0) content.append(" | ");
-            content.append(escapeMarkdown(headers[i] != null ? headers[i].trim() : ""));
+            if (i > 0) ans.append(" | ");
+            ans.append(headers[i] != null ? headers[i].trim() : "");
         }
-        content.append(" |").append(System.lineSeparator());
+        ans.append(" |").append(System.lineSeparator());
 
         // 表格分隔线
-        content.append("|");
+        ans.append("|");
         for (int i = 0; i < headers.length; i++) {
-            content.append("-----|");
+            ans.append("-----|");
         }
-        content.append(System.lineSeparator());
+        ans.append(System.lineSeparator());
 
         // 表格数据行
         if (rows != null) {
             for (String[] row : rows) {
-                content.append("| ");
+                ans.append("| ");
                 for (int i = 0; i < headers.length; i++) {
-                    if (i > 0) content.append(" | ");
+                    if (i > 0) ans.append(" | ");
                     String cell = (row != null && i < row.length) ? row[i] : "";
-                    content.append(escapeMarkdown(cell != null ? cell.trim() : ""));
+                    ans.append(cell != null ? cell.trim() : "");
                 }
-                content.append(" |").append(System.lineSeparator());
+                ans.append(" |").append(System.lineSeparator());
             }
         }
 
-        content.append(System.lineSeparator());
-        return this;
+        ans.append(System.lineSeparator());
+        return ans;
     }
 
     // ==================== 其他元素方法 ====================
@@ -383,15 +405,16 @@ public class MarkdownBuilder {
      * @param text 被引用的文本
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder blockquote(String text) {
+    public StringBuilder blockquote(String text) {
+        StringBuilder ans = new StringBuilder();
         if (text != null) {
             String[] lines = text.split("\\r?\\n");
             for (String line : lines) {
-                content.append("> ").append(line).append(System.lineSeparator());
+                ans.append("> ").append(line).append(System.lineSeparator());
             }
-            content.append(System.lineSeparator());
+            ans.append(System.lineSeparator());
         }
-        return this;
+        return ans;
     }
 
     /**
@@ -489,6 +512,7 @@ public class MarkdownBuilder {
         }
         return this;
     }
+
 
     // ==================== 工具方法 ====================
 
@@ -746,6 +770,7 @@ public class MarkdownBuilder {
      * @param markdown 要验证的Markdown字符串
      * @return boolean 是否有效
      */
+    // Todo: markdown语法判别有问题，之后修改
     public static boolean isValidMarkdown(String markdown) {
         if (markdown == null) {
             return false;

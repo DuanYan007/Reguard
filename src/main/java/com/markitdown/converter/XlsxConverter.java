@@ -141,17 +141,22 @@ public class XlsxConverter implements DocumentConverter {
         if (options.isIncludeMetadata() && metadata.containsKey("title")) {
             String title = (String) metadata.get("title");
             if (title != null && !title.trim().isEmpty()) {
-
+                markdownBuilder.heading(title.trim(), 1);
             }
         }
 
         // 如果启用则添加元数据部分
         if (options.isIncludeMetadata() && !metadata.isEmpty()) {
-            markdown.append("## 工作簿信息\n\n");
+            markdownBuilder.heading("工作簿信息", 2);
             for (Map.Entry<String, Object> entry : metadata.entrySet()) {
                 if (entry.getValue() != null) {
-                    markdown.append("- **").append(formatMetadataKey(entry.getKey()))
-                            .append(":** ").append(entry.getValue()).append("\n");
+                    String tile = formatMetadataKey(entry.getKey());
+                    // Todo: 关于元数据中的对象 ?
+                    String value = entry.getValue().toString();
+
+                    markdown.append("- **").append()
+                            .append(":** ").append().append("\n");
+
                 }
             }
             markdown.append("\n");
@@ -384,6 +389,6 @@ public class XlsxConverter implements DocumentConverter {
         // 将驼峰命名转换为标题格式
         return key.replaceAll("([a-z])([A-Z])", "$1 $2")
                 .replaceAll("^([a-z])", String.valueOf(Character.toUpperCase(key.charAt(0))))
-                .toLowerCase();
+                ;
     }
 }
