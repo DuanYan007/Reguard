@@ -1,5 +1,7 @@
 package com.markitdown.converter;
 
+import com.markdown.engine.MarkdownBuilder;
+import com.markdown.engine.config.MarkdownConfig;
 import com.markitdown.api.ConversionResult;
 import com.markitdown.api.DocumentConverter;
 import com.markitdown.config.ConversionOptions;
@@ -31,6 +33,8 @@ public class TextConverter implements DocumentConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(TextConverter.class);
 
+    private MarkdownBuilder mb;
+
     /**
      * @brief 支持的文件格式集合
      * @details 包含所有此转换器支持的文件扩展名
@@ -52,6 +56,8 @@ public class TextConverter implements DocumentConverter {
         requireNonNull(options, "转换选项不能为空");
 
         logger.info("正在转换文本文件: {}", filePath);
+        // ToDo: MarkdownConfig 并未和 Conversion Options 共享元素，待解决
+        mb = new MarkdownBuilder(new MarkdownConfig());
 
         try {
             // 读文件内容
@@ -206,8 +212,6 @@ public class TextConverter implements DocumentConverter {
      */
     private void extractJsonMetadata(String content, Map<String, Object> metadata) {
         try {
-            // 简单验证 - 检查是否看起来像有效的JSON
-            // Todo: JSON格式判断需要更加复杂的逻辑
             String trimmed = content.trim();
             metadata.put("Json格式是否有效", isValidJson(trimmed));
         } catch (Exception e) {
@@ -251,32 +255,222 @@ public class TextConverter implements DocumentConverter {
 
     /**
      * @brief 提取XML文件特定的元数据信息
-     * @details 对XML内容进行简单验证，检查是否为有效的XML格式
-     *          统计XML标签数量作为内容复杂度的参考指标
+     * @details 对XML内容进行严格验证，检查是否为有效的XML格式
+     *          统计XML元素数量、属性数量、命名空间等详细元数据信息
      *
      * @param content  XML文件内容
      * @param metadata 要更新的元数据映射表
      */
     private void extractXmlMetadata(String content, Map<String, Object> metadata) {
         try {
-            // 简单验证 - 检查是否看起来像有效的XML
-            // Todo: XML格式判断需要更复杂的逻辑
             String trimmed = content.trim();
-            boolean isValidXml = trimmed.startsWith("<") && trimmed.endsWith(">");
-            metadata.put("isValidXml", isValidXml);
 
-            if (isValidXml) {
-                // 统计XML标签数量（简单方法）
-                int tagCount = 0;
-                int index = 0;
-                while ((index = content.indexOf('<', index)) != -1) {
-                    tagCount++;
-                    index++;
-                }
-                metadata.put("tagCount", tagCount);
+            // 检查基本的XML格式
+            if (!trimmed.startsWith("<") || !trimmed.endsWith(">")) {
+                metadata.put("XML格式是否有效", false);
+                return;
             }
+
+            // 使用Java内置的XML解析器进行严格验证
+            javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
+
+            // 解析XML文档
+            org.w3c.dom.Document document = builder.parse(new java.io.ByteArrayInputStream(trimmed.getBytes(StandardCharsets.UTF_8)));
+
+            // XML格式有效，提取详细元数据
+            metadata.put("XML格式是否有效", true);
+
+            // 统计根元素信息
+            org.w3c.dom.Element rootElement = document.getDocumentElement();
+            metadata.put("根元素名称", rootElement.getNodeName());
+            metadata.put("根元素命名空间", rootElement.getNamespaceURI());
+
+            // 统计元素数量
+            int elementCount = countElementsByTagName(document.getDocumentElement(), "*");
+            metadata.put("元素数量", elementCount);
+
+            // 统计属性数量
+            int attributeCount = countAttributes(document.getDocumentElement());
+            metadata.put("属性数量", attributeCount);
+
+            // 统计文本节点数量
+            int textNodeCount = countTextNodes(document.getDocumentElement());
+            metadata.put("文本节点数量", textNodeCount);
+
+            // 检测是否有CDATA块
+            boolean hasCData = hasCDataSections(document.getDocumentElement());
+            metadata.put("包含CDATA块", hasCData);
+
+            // 检测是否有注释
+            boolean hasComments = hasComments(document.getDocumentElement());
+            metadata.put("包含注释", hasComments);
+
+            // 统计命名空间数量
+            int namespaceCount = countNamespaces(document.getDocumentElement());
+            metadata.put("命名空间数量", namespaceCount);
+
+        } catch (javax.xml.parsers.ParserConfigurationException | org.xml.sax.SAXException | java.io.IOException e) {
+            logger.warn("XML格式验证失败: {}", e.getMessage());
+            metadata.put("XML格式是否有效", false);
+            metadata.put("验证错误", e.getMessage());
         } catch (Exception e) {
-            metadata.put("isValidXml", false);
+            logger.error("XML元数据提取时发生未知错误: {}", e.getMessage());
+            metadata.put("XML格式是否有效", false);
+            metadata.put("处理错误", e.getMessage());
+        }
+    }
+
+    /**
+     * @brief 统计指定元素下匹配标签名的元素数量
+     * @details 递归遍历DOM树，统计所有匹配指定标签名的元素
+     *
+     * @param element 要统计的根元素
+     * @param tagName 要匹配的标签名，"*"表示所有标签
+     * @return 匹配的元素数量
+     */
+    private int countElementsByTagName(org.w3c.dom.Element element, String tagName) {
+        int count = 0;
+
+        if ("*".equals(tagName) || element.getTagName().equals(tagName)) {
+            count++;
+        }
+
+        org.w3c.dom.NodeList children = element.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            org.w3c.dom.Node child = children.item(i);
+            if (child.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+                count += countElementsByTagName((org.w3c.dom.Element) child, tagName);
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * @brief 统计指定元素下所有属性的总量
+     * @details 递归遍历DOM树，统计所有元素的属性数量
+     *
+     * @param element 要统计的根元素
+     * @return 属性总数量
+     */
+    private int countAttributes(org.w3c.dom.Element element) {
+        int count = element.getAttributes().getLength();
+
+        org.w3c.dom.NodeList children = element.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            org.w3c.dom.Node child = children.item(i);
+            if (child.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+                count += countAttributes((org.w3c.dom.Element) child);
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * @brief 统计指定元素下文本节点的数量
+     * @details 递归遍历DOM树，统计所有非空的文本节点
+     *
+     * @param element 要统计的根元素
+     * @return 文本节点数量
+     */
+    private int countTextNodes(org.w3c.dom.Element element) {
+        int count = 0;
+
+        org.w3c.dom.NodeList children = element.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            org.w3c.dom.Node child = children.item(i);
+            if (child.getNodeType() == org.w3c.dom.Node.TEXT_NODE) {
+                String text = child.getTextContent().trim();
+                if (!text.isEmpty()) {
+                    count++;
+                }
+            } else if (child.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+                count += countTextNodes((org.w3c.dom.Element) child);
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * @brief 检查指定元素是否包含CDATA块
+     * @details 递归遍历DOM树，检查是否存在CDATA节点
+     *
+     * @param element 要检查的根元素
+     * @return 如果包含CDATA块返回true，否则返回false
+     */
+    private boolean hasCDataSections(org.w3c.dom.Element element) {
+        org.w3c.dom.NodeList children = element.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            org.w3c.dom.Node child = children.item(i);
+            if (child.getNodeType() == org.w3c.dom.Node.CDATA_SECTION_NODE) {
+                return true;
+            } else if (child.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+                if (hasCDataSections((org.w3c.dom.Element) child)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @brief 检查指定元素是否包含注释
+     * @details 递归遍历DOM树，检查是否存在注释节点
+     *
+     * @param element 要检查的根元素
+     * @return 如果包含注释返回true，否则返回false
+     */
+    private boolean hasComments(org.w3c.dom.Element element) {
+        org.w3c.dom.NodeList children = element.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            org.w3c.dom.Node child = children.item(i);
+            if (child.getNodeType() == org.w3c.dom.Node.COMMENT_NODE) {
+                return true;
+            } else if (child.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+                if (hasComments((org.w3c.dom.Element) child)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @brief 统计指定元素下使用的命名空间数量
+     * @details 递归遍历DOM树，收集所有使用的命名空间URI
+     *
+     * @param element 要统计的根元素
+     * @return 使用的命名空间数量
+     */
+    private int countNamespaces(org.w3c.dom.Element element) {
+        java.util.Set<String> namespaces = new java.util.HashSet<>();
+        collectNamespaces(element, namespaces);
+        return namespaces.size();
+    }
+
+    /**
+     * @brief 递归收集命名空间URI到集合中
+     * @details 遍历所有元素，收集其命名空间URI
+     *
+     * @param element 要处理的元素
+     * @param namespaces 命名空间集合
+     */
+    private void collectNamespaces(org.w3c.dom.Element element, java.util.Set<String> namespaces) {
+        String namespaceUri = element.getNamespaceURI();
+        if (namespaceUri != null && !namespaceUri.isEmpty()) {
+            namespaces.add(namespaceUri);
+        }
+
+        org.w3c.dom.NodeList children = element.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            org.w3c.dom.Node child = children.item(i);
+            if (child.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+                collectNamespaces((org.w3c.dom.Element) child, namespaces);
+            }
         }
     }
 
@@ -292,53 +486,56 @@ public class TextConverter implements DocumentConverter {
      * @return 格式化的Markdown内容字符串
      */
     private String convertToMarkdown(String content, String format, Map<String, Object> metadata, ConversionOptions options) {
-        StringBuilder markdown = new StringBuilder();
-
         // 如果有标题则添加标题
-        // Todo: 可以写一个markdown引擎，封装成一个完整对象
-        if (options.isIncludeMetadata() && metadata.containsKey("fileName")) {
-            String fileName = (String) metadata.get("fileName");
-            String title = getFileNameWithoutExtension(fileName);
-            markdown.append("# ").append(title).append("\n\n");
+        if (options.isIncludeMetadata() && metadata.containsKey("文件名")) {
+            String title = (String) metadata.get("文件名");
+            if (title != null && !title.trim().isEmpty()) {
+                mb.append(mb.h1(mb.escapeMarkdown(title.trim())));
+            }
         }
 
         // 如果启用则添加元数据部分
         if (options.isIncludeMetadata() && !metadata.isEmpty()) {
-            markdown.append("## 文件信息\n\n");
+            mb.append(mb.h2("文件信息"));
+            List<StringBuilder> meta = new ArrayList<>();
             for (Map.Entry<String, Object> entry : metadata.entrySet()) {
-                if (entry.getValue() != null && !entry.getKey().equals("fileName")) {
-                    markdown.append("- **").append(formatMetadataKey(entry.getKey()))
-                            .append(":** ").append(entry.getValue()).append("\n");
+                if (entry.getValue() != null) {
+                    String tile = formatMetadataKey(entry.getKey());
+                    // Todo: 关于元数据中的对象 ?
+                    String value = entry.getValue().toString();
+                    meta.add(new StringBuilder().append("**").append(tile).append(":** ").append(value));
                 }
             }
-            markdown.append("\n");
+            // Todo: 这里可能有问题，需要排查
+            mb.append(mb.unorderedList(meta.toArray(new StringBuilder[meta.size()])));
+            mb.newline();
         }
 
         // 根据格式处理内容
-        markdown.append("## 内容\n\n");
+        mb.append(mb.h2("内容"));
 
         switch (format) {
-            case "markdown":
-                markdown.append(content);
+            case "md":
+                mb.append(content);
                 break;
             case "csv":
-                markdown.append(convertCsvToMarkdown(content));
+                mb.append(convertCsvToMarkdown(content));
                 break;
             case "json":
-                markdown.append(convertJsonToMarkdown(content));
+                mb.append(convertJsonToMarkdown(content));
                 break;
             case "xml":
-                markdown.append(convertXmlToMarkdown(content));
+                mb.append(convertXmlToMarkdown(content));
                 break;
             case "log":
-                markdown.append(convertLogToMarkdown(content));
+                mb.append(convertLogToMarkdown(content));
                 break;
             default:
-                markdown.append(convertPlainTextToMarkdown(content));
+                mb.append(convertPlainTextToMarkdown(content));
                 break;
         }
 
-        return markdown.toString();
+        return mb.flush().toString();
     }
 
     /**
@@ -349,41 +546,23 @@ public class TextConverter implements DocumentConverter {
      * @param csvContent CSV格式的内容字符串
      * @return Markdown表格格式的字符串
      */
-    private String convertCsvToMarkdown(String csvContent) {
+    private StringBuilder convertCsvToMarkdown(String csvContent) {
         String[] lines = csvContent.split("\\r?\\n");
         if (lines.length == 0) {
-            return "*空CSV文件*\n\n";
+            return mb.bold("空文件夹").append("\n\n");
         }
-
-        StringBuilder markdown = new StringBuilder();
 
         // 处理表头行
         String[] headers = lines[0].split(",");
-        markdown.append("| ");
-        for (String header : headers) {
-            markdown.append(header.trim()).append(" | ");
-        }
-        markdown.append("\n");
-
-        // 添加分隔符
-        markdown.append("| ");
-        for (int i = 0; i < headers.length; i++) {
-            markdown.append(" --- | ");
-        }
-        markdown.append("\n");
-
-        // 处理数据行
-        for (int i = 1; i < lines.length; i++) {
-            String[] cells = lines[i].split(",");
-            markdown.append("| ");
-            for (String cell : cells) {
-                markdown.append(cell.trim()).append(" | ");
+        int columns = headers.length;
+        String[][] data = new String[lines.length - 1][columns];
+        for(int i = 1; i < lines.length; i++) {
+            String[] row = lines[i].split(",");
+            for (int j = 0; j < columns; j++) {
+                data[i - 1][j] = row[j];
             }
-            markdown.append("\n");
         }
-
-        markdown.append("\n");
-        return markdown.toString();
+        return mb.table(headers, data);
     }
 
     /**

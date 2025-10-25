@@ -135,11 +135,10 @@ public class XlsxConverter implements DocumentConverter {
      * @return Markdown格式的内容字符串
      */
     private String convertToMarkdown(Workbook workbook, Map<String, Object> metadata, ConversionOptions options) {
-        // ToDo: 将markdown引擎接入
 
         // 如果有标题则添加标题
-        if (options.isIncludeMetadata() && metadata.containsKey("title")) {
-            String title = (String) metadata.get("title");
+        if (options.isIncludeMetadata() && metadata.containsKey("文件名")) {
+            String title = (String) metadata.get("文件名");
             if (title != null && !title.trim().isEmpty()) {
                 mb.append(mb.h1(mb.escapeMarkdown(title.trim())));
             }
@@ -179,7 +178,7 @@ public class XlsxConverter implements DocumentConverter {
      */
     private void processSheet(Sheet sheet, int sheetNum, ConversionOptions options) {
         String sheetName = sheet.getSheetName();
-        mb.append(mb.h2("Sheet " + sheetNum + ": " + sheetName));
+        mb.append(mb.h2("工作表 " + sheetNum + ": " + sheetName));
         if (!options.isIncludeTables()) {
             mb.append(mb.italic("表格功能在转换选项中被禁用"));
             mb.newline(2);
@@ -251,7 +250,6 @@ public class XlsxConverter implements DocumentConverter {
      * @param lastRow  最后一行的索引
      * @param options  转换选项配置
      */
-    // Todo: 改到这里了
     private void processTableWithHeader(Sheet sheet, int firstRow, int lastRow
                                        , ConversionOptions options) {
         List<String> headers= new ArrayList<>();
