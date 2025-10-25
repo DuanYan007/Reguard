@@ -41,6 +41,7 @@ public class MarkdownConfig {
      *          创建新的customOptions映射以避免共享状态
      * @param other 要拷贝的配置对象，不能为null
      */
+    // 这里可以检查一下MarkdownConfig里的值是否有效
     public MarkdownConfig(MarkdownConfig other) {
         this.includeTables = other.includeTables;
         this.includeMetadata = other.includeMetadata;
