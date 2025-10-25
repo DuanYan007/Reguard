@@ -294,7 +294,7 @@ public class MarkdownBuilder {
             String indent = "  ".repeat(level);
 
             for (StringBuilder item : items) {
-                if (item != null && !item.isEmpty()) {
+                if (item != null ) {
                     ans.append(indent)
                            .append(marker)
                            .append(" ")

@@ -35,7 +35,7 @@ public class TextConverter implements DocumentConverter {
      * @brief 支持的文件格式集合
      * @details 包含所有此转换器支持的文件扩展名
      */
-    private static final Set<String> SUPPORTED_FORMATS = Set.of("txt", "md", "markdown", "csv", "log", "json", "xml");
+    private static final Set<String> SUPPORTED_FORMATS = Set.of("txt", "md", "csv", "log", "json", "xml");
 
     /**
      * @brief 将文本文件转换为Markdown格式
@@ -48,22 +48,22 @@ public class TextConverter implements DocumentConverter {
      */
     @Override
     public ConversionResult convert(Path filePath, ConversionOptions options) throws ConversionException {
-        requireNonNull(filePath, "File path cannot be null");
-        requireNonNull(options, "Conversion options cannot be null");
+        requireNonNull(filePath, "文件路径不能为空");
+        requireNonNull(options, "转换选项不能为空");
 
-        logger.info("Converting text file: {}", filePath);
+        logger.info("正在转换文本文件: {}", filePath);
 
         try {
-            // Read the file content
+            // 读文件内容
             String content = Files.readString(filePath, StandardCharsets.UTF_8);
 
-            // Detect file format
+            // 检测文件格式
             String format = detectFileFormat(filePath);
 
-            // Extract metadata
+            // 提取元数据
             Map<String, Object> metadata = extractMetadata(filePath, content, format, options);
 
-            // Convert content to Markdown
+            // 转换文件成markdown
             String markdownContent = convertToMarkdown(content, format, metadata, options);
 
             List<String> warnings = new ArrayList<>();
@@ -72,7 +72,7 @@ public class TextConverter implements DocumentConverter {
                     filePath.toFile().length(), filePath.getFileName().toString());
 
         } catch (IOException e) {
-            String errorMessage = "Failed to read text file: " + e.getMessage();
+            String errorMessage = "读取文本文件失败: " + e.getMessage();
             logger.error(errorMessage, e);
             throw new ConversionException(errorMessage, e, filePath.getFileName().toString(), getName());
         }
@@ -114,10 +114,10 @@ public class TextConverter implements DocumentConverter {
     }
 
     /**
-     * Detects the format of the text file based on its extension.
+     * 根据文件扩展名检测文本文件格式
      *
-     * @param filePath the file path
-     * @return the detected format
+     * @param filePath 文件路径
+     * @return 检测到的文件格式
      */
     private String detectFileFormat(Path filePath) {
         String fileName = filePath.getFileName().toString();
@@ -125,7 +125,6 @@ public class TextConverter implements DocumentConverter {
 
         switch (extension) {
             case "md":
-            case "markdown":
                 return "markdown";
             case "csv":
                 return "csv";
@@ -141,31 +140,31 @@ public class TextConverter implements DocumentConverter {
     }
 
     /**
-     * Extracts metadata from the text file.
+     * 从文本文件中提取元数据信息
      *
-     * @param filePath the file path
-     * @param content  the file content
-     * @param format   the detected format
-     * @param options  conversion options
-     * @return metadata map
+     * @param filePath 文件路径
+     * @param content  文件内容
+     * @param format   检测到的文件格式
+     * @param options  转换选项配置
+     * @return 包含元数据信息的映射表
      */
     private Map<String, Object> extractMetadata(Path filePath, String content, String format, ConversionOptions options) {
         Map<String, Object> metadata = new HashMap<>();
 
         if (options.isIncludeMetadata()) {
-            // File information
-            metadata.put("fileName", filePath.getFileName().toString());
-            metadata.put("fileSize", filePath.toFile().length());
-            metadata.put("format", format);
+            // 文件基本信息
+            metadata.put("文件名", filePath.getFileName().toString());
+            metadata.put("文件大小", filePath.toFile().length());
+            metadata.put("文件类型", format);
 
-            // Content statistics
+            // 内容统计信息
             String[] lines = content.split("\\r?\\n");
-            metadata.put("lineCount", lines.length);
-            metadata.put("characterCount", content.length());
-            metadata.put("wordCount", countWords(content));
+            metadata.put("行数量", lines.length);
+            metadata.put("字符数量", content.length());
+            metadata.put("单词数量", countWords(content));
 
-            // Format-specific metadata
-            // ToDo: txt ?
+            // 格式特定的元数据信息
+            // ToDo: 纯文本格的特殊元数据待补充 ? 感觉也不需要补充
             if ("csv".equals(format)) {
                 extractCsvMetadata(content, metadata);
             } else if ("json".equals(format)) {
@@ -174,64 +173,68 @@ public class TextConverter implements DocumentConverter {
                 extractXmlMetadata(content, metadata);
             }
 
-            metadata.put("conversionTime", LocalDateTime.now());
+            metadata.put("转换时刻", LocalDateTime.now());
         }
 
         return metadata;
     }
 
     /**
-     * Extracts metadata specific to CSV files.
+     * 提取CSV文件特定的元数据信息
      *
-     * @param content  the CSV content
-     * @param metadata the metadata map to update
+     * @param content  CSV文件内容
+     * @param metadata 要更新的元数据映射表
      */
     private void extractCsvMetadata(String content, Map<String, Object> metadata) {
         String[] lines = content.split("\\r?\\n");
         if (lines.length > 0) {
             String firstLine = lines[0];
             String[] columns = firstLine.split(",");
-            metadata.put("columnCount", columns.length);
-            metadata.put("rowCount", lines.length - 1); // Exclude header
-            metadata.put("hasHeader", true);
+            metadata.put("列数量", columns.length);
+            metadata.put("行数量", lines.length - 1); // Exclude header
+            metadata.put("有头部", true);
         }
     }
 
     /**
-     * Extracts metadata specific to JSON files.
+     * @brief 提取JSON文件特定的元数据信息
+     * @details 对JSON内容进行简单验证，检查是否为有效的JSON格式
+     *          通过检查开始和结束字符来判断JSON结构的有效性
      *
-     * @param content  the JSON content
-     * @param metadata the metadata map to update
+     * @param content  JSON文件内容
+     * @param metadata 要更新的元数据映射表
      */
     private void extractJsonMetadata(String content, Map<String, Object> metadata) {
         try {
-            // Simple validation - check if it looks like valid JSON
-            // Todo: Json判断需要更加复杂
+            // 简单验证 - 检查是否看起来像有效的JSON
+            // Todo: JSON格式判断需要更加复杂的逻辑
             String trimmed = content.trim();
             boolean isValidJson = (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
                                  (trimmed.startsWith("[") && trimmed.endsWith("]"));
-            metadata.put("isValidJson", isValidJson);
+            metadata.put("Json格式是否有效", isValidJson);
         } catch (Exception e) {
-            metadata.put("isValidJson", false);
+            metadata.put("Json格式是否有效", false);
         }
     }
 
     /**
-     * Extracts metadata specific to XML files.
+     * @brief 提取XML文件特定的元数据信息
+     * @details 对XML内容进行简单验证，检查是否为有效的XML格式
+     *          统计XML标签数量作为内容复杂度的参考指标
      *
-     * @param content  the XML content
-     * @param metadata the metadata map to update
+     * @param content  XML文件内容
+     * @param metadata 要更新的元数据映射表
      */
     private void extractXmlMetadata(String content, Map<String, Object> metadata) {
         try {
-            // Simple validation - check if it looks like valid XML
-            // Todo: Xml格式复杂判断
+            // 简单验证 - 检查是否看起来像有效的XML
+            // Todo: XML格式判断需要更复杂的逻辑
             String trimmed = content.trim();
             boolean isValidXml = trimmed.startsWith("<") && trimmed.endsWith(">");
             metadata.put("isValidXml", isValidXml);
 
             if (isValidXml) {
-                // Count XML tags (simple approach)
+                // 统计XML标签数量（简单方法）
                 int tagCount = 0;
                 int index = 0;
                 while ((index = content.indexOf('<', index)) != -1) {
@@ -246,18 +249,20 @@ public class TextConverter implements DocumentConverter {
     }
 
     /**
-     * Converts text content to Markdown format.
+     * @brief 将文本内容转换为Markdown格式
+     * @details 根据检测到的文件格式选择相应的转换策略
+     *          添加文档标题、元数据信息和格式化的内容部分
      *
-     * @param content  the original text content
-     * @param format   the detected format
-     * @param metadata the document metadata
-     * @param options  conversion options
-     * @return Markdown formatted content
+     * @param content  原始文本内容
+     * @param format   检测到的文件格式
+     * @param metadata 文档元数据信息
+     * @param options  转换选项配置
+     * @return 格式化的Markdown内容字符串
      */
     private String convertToMarkdown(String content, String format, Map<String, Object> metadata, ConversionOptions options) {
         StringBuilder markdown = new StringBuilder();
 
-        // Add title if available
+        // 如果有标题则添加标题
         // Todo: 可以写一个markdown引擎，封装成一个完整对象
         if (options.isIncludeMetadata() && metadata.containsKey("fileName")) {
             String fileName = (String) metadata.get("fileName");
@@ -265,9 +270,9 @@ public class TextConverter implements DocumentConverter {
             markdown.append("# ").append(title).append("\n\n");
         }
 
-        // Add metadata section if enabled
+        // 如果启用则添加元数据部分
         if (options.isIncludeMetadata() && !metadata.isEmpty()) {
-            markdown.append("## File Information\n\n");
+            markdown.append("## 文件信息\n\n");
             for (Map.Entry<String, Object> entry : metadata.entrySet()) {
                 if (entry.getValue() != null && !entry.getKey().equals("fileName")) {
                     markdown.append("- **").append(formatMetadataKey(entry.getKey()))
@@ -277,8 +282,8 @@ public class TextConverter implements DocumentConverter {
             markdown.append("\n");
         }
 
-        // Process content based on format
-        markdown.append("## Content\n\n");
+        // 根据格式处理内容
+        markdown.append("## 内容\n\n");
 
         switch (format) {
             case "markdown":
@@ -305,20 +310,22 @@ public class TextConverter implements DocumentConverter {
     }
 
     /**
-     * Converts CSV content to Markdown table.
+     * @brief 将CSV内容转换为Markdown表格格式
+     * @details 解析CSV数据，第一行作为表头，后续行作为数据行
+     *          自动添加表格分隔符，生成标准的Markdown表格语法
      *
-     * @param csvContent the CSV content
-     * @return Markdown table
+     * @param csvContent CSV格式的内容字符串
+     * @return Markdown表格格式的字符串
      */
     private String convertCsvToMarkdown(String csvContent) {
         String[] lines = csvContent.split("\\r?\\n");
         if (lines.length == 0) {
-            return "*Empty CSV file*\n\n";
+            return "*空CSV文件*\n\n";
         }
 
         StringBuilder markdown = new StringBuilder();
 
-        // Process header row
+        // 处理表头行
         String[] headers = lines[0].split(",");
         markdown.append("| ");
         for (String header : headers) {
@@ -326,14 +333,14 @@ public class TextConverter implements DocumentConverter {
         }
         markdown.append("\n");
 
-        // Add separator
+        // 添加分隔符
         markdown.append("| ");
         for (int i = 0; i < headers.length; i++) {
             markdown.append(" --- | ");
         }
         markdown.append("\n");
 
-        // Process data rows
+        // 处理数据行
         for (int i = 1; i < lines.length; i++) {
             String[] cells = lines[i].split(",");
             markdown.append("| ");
@@ -348,30 +355,36 @@ public class TextConverter implements DocumentConverter {
     }
 
     /**
-     * Converts JSON content to Markdown code block.
+     * @brief 将JSON内容转换为Markdown代码块
+     * @details 使用代码块语法包装JSON内容，保持原始格式
+     *          添加json语言标识符以便语法高亮显示
      *
-     * @param jsonContent the JSON content
-     * @return Markdown with JSON code block
+     * @param jsonContent JSON格式的内容字符串
+     * @return 包含JSON代码块的Markdown字符串
      */
     private String convertJsonToMarkdown(String jsonContent) {
         return "```json\n" + jsonContent + "\n```\n\n";
     }
 
     /**
-     * Converts XML content to Markdown code block.
+     * @brief 将XML内容转换为Markdown代码块
+     * @details 使用代码块语法包装XML内容，保持原始格式
+     *          添加xml语言标识符以便语法高亮显示
      *
-     * @param xmlContent the XML content
-     * @return Markdown with XML code block
+     * @param xmlContent XML格式的内容字符串
+     * @return 包含XML代码块的Markdown字符串
      */
     private String convertXmlToMarkdown(String xmlContent) {
         return "```xml\n" + xmlContent + "\n```\n\n";
     }
 
     /**
-     * Converts log content to formatted Markdown.
+     * @brief 将日志内容转换为格式化的Markdown
+     * @details 解析日志级别，根据不同级别应用不同的格式样式
+     *          错误信息加粗显示，警告信息显示，普通信息斜体显示
      *
-     * @param logContent the log content
-     * @return formatted Markdown
+     * @param logContent 日志格式的内容字符串
+     * @return 格式化的Markdown字符串
      */
     private String convertLogToMarkdown(String logContent) {
         String[] lines = logContent.split("\\r?\\n");
@@ -380,13 +393,13 @@ public class TextConverter implements DocumentConverter {
         for (String line : lines) {
             String trimmed = line.trim();
             if (!trimmed.isEmpty()) {
-                // Detect log levels and format accordingly
+                // 检测日志级别并相应格式化
                 if (trimmed.toUpperCase().contains("ERROR")) {
-                    markdown.append("**ERROR:** ").append(trimmed).append("\n");
+                    markdown.append("**错误:** ").append(trimmed).append("\n");
                 } else if (trimmed.toUpperCase().contains("WARN")) {
-                    markdown.append("**WARNING:** ").append(trimmed).append("\n");
+                    markdown.append("**警告:** ").append(trimmed).append("\n");
                 } else if (trimmed.toUpperCase().contains("INFO")) {
-                    markdown.append("*INFO:* ").append(trimmed).append("\n");
+                    markdown.append("*信息:* ").append(trimmed).append("\n");
                 } else {
                     markdown.append(trimmed).append("\n");
                 }
@@ -398,10 +411,12 @@ public class TextConverter implements DocumentConverter {
     }
 
     /**
-     * Converts plain text content to Markdown.
+     * @brief 将纯文本内容转换为Markdown格式
+     * @details 智能识别文本结构，保持原有标题、列表、代码块的格式
+     *          空行保持不变，普通行转换为段落格式
      *
-     * @param textContent the plain text content
-     * @return formatted Markdown
+     * @param textContent 纯文本内容字符串
+     * @return 格式化的Markdown字符串
      */
     private String convertPlainTextToMarkdown(String textContent) {
         String[] lines = textContent.split("\\r?\\n");
@@ -413,16 +428,16 @@ public class TextConverter implements DocumentConverter {
             if (trimmed.isEmpty()) {
                 markdown.append("\n");
             } else if (trimmed.startsWith("#")) {
-                // Preserve existing headings
+                // 保持现有标题格式
                 markdown.append(trimmed).append("\n\n");
             } else if (trimmed.startsWith(" ") || trimmed.startsWith("\t")) {
-                // Code block or indented text
+                // 代码块或缩进文本
                 markdown.append("    ").append(trimmed).append("\n");
             } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-                // List items
+                // 列表项
                 markdown.append(trimmed).append("\n");
             } else {
-                // Regular paragraph
+                // 普通段落
                 markdown.append(trimmed).append("\n\n");
             }
         }
@@ -431,10 +446,12 @@ public class TextConverter implements DocumentConverter {
     }
 
     /**
-     * Counts the number of words in the content.
+     * @brief 统计内容中的单词数量
+     * @details 使用空格符分割文本，计算非空单词的总数
+     *          处理null值和空字符串的边界情况
      *
-     * @param content the content to analyze
-     * @return word count
+     * @param content 要分析的文本内容
+     * @return 单词数量统计结果
      */
     private int countWords(String content) {
         if (content == null || content.trim().isEmpty()) {
@@ -444,13 +461,15 @@ public class TextConverter implements DocumentConverter {
     }
 
     /**
-     * Gets the file extension from a file name.
+     * @brief 从文件名中获取文件扩展名
+     * @details 查找最后一个点的位置，提取其后的字符串作为扩展名
+     *          不包含点本身，处理无扩展名的情况
      *
-     * @param fileName the file name
-     * @return the file extension (without the dot), or empty string if no extension
+     * @param fileName 完整的文件名字符串
+     * @return 文件扩展名（不包含点），无扩展名时返回空字符串
      */
     private String getFileExtension(String fileName) {
-        requireNonNull(fileName, "File name cannot be null");
+        requireNonNull(fileName, "文件名不能为空");
 
         int lastDotIndex = fileName.lastIndexOf('.');
         if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
@@ -461,13 +480,15 @@ public class TextConverter implements DocumentConverter {
     }
 
     /**
-     * Gets the file name without extension.
+     * @brief 获取不带扩展名的文件名
+     * @details 查找最后一个点的位置，返回其前的部分作为文件名
+     *          保留主文件名部分，移除扩展名和点
      *
-     * @param fileName the file name
-     * @return the file name without extension
+     * @param fileName 完整的文件名字符串
+     * @return 不带扩展名的文件名
      */
     private String getFileNameWithoutExtension(String fileName) {
-        requireNonNull(fileName, "File name cannot be null");
+        requireNonNull(fileName, "文件名不能为空");
 
         int lastDotIndex = fileName.lastIndexOf('.');
         if (lastDotIndex > 0) {
@@ -478,32 +499,38 @@ public class TextConverter implements DocumentConverter {
     }
 
     /**
-     * Formats metadata keys for display.
+     * @brief 格式化元数据键名以供显示
+     * @details 将驼峰命名转换为标题格式，首字母大写
+     *          在大写字母前插入空格，提高可读性
      *
-     * @param key the metadata key
-     * @return formatted key
+     * @param key 元数据键名字符串
+     * @return 格式化后的键名
      */
     private String formatMetadataKey(String key) {
-        // Convert camelCase to Title Case
+        // 将驼峰命名转换为标题格式
         return key.replaceAll("([a-z])([A-Z])", "$1 $2")
                 .replaceAll("^([a-z])", String.valueOf(Character.toUpperCase(key.charAt(0))))
                 .toLowerCase();
     }
 
     /**
-     * Checks if a file format is supported by this converter.
+     * @brief 检查文件格式是否被此转换器支持
+     * @details 在支持格式集合中查找指定的文件扩展名
+     *          不区分大小写进行比较，提高兼容性
      *
-     * @param fileExtension the file extension
-     * @return true if supported, false otherwise
+     * @param fileExtension 要检查的文件扩展名
+     * @return 如果支持该格式返回true，否则返回false
      */
     public static boolean isSupportedFormat(String fileExtension) {
         return SUPPORTED_FORMATS.contains(fileExtension.toLowerCase());
     }
 
     /**
-     * Gets all supported text formats.
+     * @brief 获取所有支持的文本格式
+     * @details 返回支持的文件扩展名集合的副本
+     *          防止外部修改原始集合数据
      *
-     * @return a set of supported file extensions
+     * @return 支持的文件扩展名集合
      */
     public static Set<String> getSupportedFormats() {
         return new HashSet<>(SUPPORTED_FORMATS);

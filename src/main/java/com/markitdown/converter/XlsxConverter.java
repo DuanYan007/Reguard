@@ -179,7 +179,7 @@ public class XlsxConverter implements DocumentConverter {
      */
     private void processSheet(Sheet sheet, int sheetNum, ConversionOptions options) {
         String sheetName = sheet.getSheetName();
-        mb.append(mb.h2("Sheet " + sheetNum + ": ") + sheetName);
+        mb.append(mb.h2("Sheet " + sheetNum + ": " + sheetName));
         if (!options.isIncludeTables()) {
             mb.append(mb.italic("表格功能在转换选项中被禁用"));
             mb.newline(2);
@@ -254,38 +254,21 @@ public class XlsxConverter implements DocumentConverter {
     // Todo: 改到这里了
     private void processTableWithHeader(Sheet sheet, int firstRow, int lastRow
                                        , ConversionOptions options) {
-        // 处理表头行
-        Row headerRow = sheet.getRow(firstRow);
-        if (headerRow != null) {
-            markdown.append("| ");
-            for (Cell cell : headerRow) {
-                String cellValue = getCellValueAsString(cell).trim();
-                markdown.append(cellValue).append(" | ");
-            }
-            markdown.append("\n");
-
-            // 添加分隔符
-            markdown.append("| ");
-            for (int i = 0; i < headerRow.getPhysicalNumberOfCells(); i++) {
-                markdown.append(" --- | ");
-            }
-            markdown.append("\n");
+        List<String> headers= new ArrayList<>();
+        Row headRow = sheet.getRow(firstRow);
+        for(Cell cell : headRow) {
+            headers.add(getCellValueAsString(cell).trim());
         }
-
-        // 处理数据行
-        for (int rowNum = firstRow + 1; rowNum <= lastRow; rowNum++) {
-            Row row = sheet.getRow(rowNum);
-            if (row == null) continue;
-
-            markdown.append("| ");
-            for (Cell cell : row) {
-                String cellValue = getCellValueAsString(cell).trim();
-                markdown.append(cellValue).append(" | ");
+        List<List<String>> data = new ArrayList<>();
+        for(int i = firstRow + 1; i <= lastRow; i++) {
+            Row row = sheet.getRow(i);
+            for(Cell cell : row) {
+                data.get(i - firstRow).add(getCellValueAsString(cell).trim());
             }
-            markdown.append("\n");
         }
+        String[][] table = data.stream().map(list -> list.toArray(new String[0])).toArray(String[][]::new);
+        mb.append(mb.table(headers.toArray(new String[0]), table));
 
-        markdown.append("\n");
     }
 
     /**
@@ -298,20 +281,21 @@ public class XlsxConverter implements DocumentConverter {
      */
     private void processTableWithoutHeader(Sheet sheet, int firstRow, int lastRow
                                          , ConversionOptions options) {
-        // 将所有行作为数据处理
-        for (int rowNum = firstRow; rowNum <= lastRow; rowNum++) {
-            Row row = sheet.getRow(rowNum);
-            if (row == null) continue;
-
-            markdown.append("| ");
-            for (Cell cell : row) {
-                String cellValue = getCellValueAsString(cell).trim();
-                markdown.append(cellValue).append(" | ");
-            }
-            markdown.append("\n");
+        List<String> headers= new ArrayList<>();
+        Row headRow = sheet.getRow(firstRow);
+        for(Cell cell : headRow) {
+            headers.add("default");
         }
-
-        markdown.append("\n");
+        List<List<String>> data = new ArrayList<>();
+        for(int i = firstRow; i <= lastRow; i++) {
+            Row row = sheet.getRow(i);
+            data.add(new ArrayList<>());
+            for(Cell cell : row) {
+                data.get(i - firstRow).add(getCellValueAsString(cell).trim());
+            }
+        }
+        String[][] table = data.stream().map(list -> list.toArray(new String[0])).toArray(String[][]::new);
+        mb.append(mb.table(headers.toArray(new String[0]), table));
     }
 
     /**
