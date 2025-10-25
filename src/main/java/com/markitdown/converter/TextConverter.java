@@ -209,11 +209,43 @@ public class TextConverter implements DocumentConverter {
             // 简单验证 - 检查是否看起来像有效的JSON
             // Todo: JSON格式判断需要更加复杂的逻辑
             String trimmed = content.trim();
-            boolean isValidJson = (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
-                                 (trimmed.startsWith("[") && trimmed.endsWith("]"));
-            metadata.put("Json格式是否有效", isValidJson);
+            metadata.put("Json格式是否有效", isValidJson(trimmed));
         } catch (Exception e) {
             metadata.put("Json格式是否有效", false);
+        }
+    }
+
+    /**
+     *   验证Json对象
+     * @param content
+     * @return 验证JSON对象格式是否正确
+     */
+    private boolean isValidJson(String content){
+        if (content == null || content.trim().isEmpty()) {
+            logger.error("内容为空，不是有效的JSON对象");
+            return false;
+        }
+
+        String trimmed = content.trim();
+
+        // 检查是否为有效的JSON格式（对象或数组）
+        if (!(trimmed.startsWith("{") && trimmed.endsWith("}")) &&
+            !(trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+            logger.error("内容不是以{}开头结尾，也不是以[]开头结尾，不是有效的JSON格式", "{}");
+            return false;
+        }
+
+        try {
+            // 使用Jackson进行更严格的JSON验证
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            objectMapper.readTree(trimmed);
+            return true;
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            logger.error("JSON格式验证失败: {} - 原因: {}", trimmed.substring(0, Math.min(50, trimmed.length())), e.getMessage());
+            return false;
+        } catch (Exception e) {
+            logger.error("验证JSON时发生未知错误: {}", e.getMessage());
+            return false;
         }
     }
 
