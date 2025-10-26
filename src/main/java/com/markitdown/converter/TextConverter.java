@@ -167,7 +167,7 @@ public class TextConverter implements DocumentConverter {
             String[] lines = content.split("\\r?\\n");
             metadata.put("行数量", lines.length);
             metadata.put("字符数量", content.length());
-            metadata.put("单词数量", countWords(content));
+            // metadata.put("单词数量", countWords(content));
 
             // 格式特定的元数据信息
             // ToDo: 纯文本格的特殊元数据待补充 ? 感觉也不需要补充
@@ -486,31 +486,10 @@ public class TextConverter implements DocumentConverter {
      * @return 格式化的Markdown内容字符串
      */
     private String convertToMarkdown(String content, String format, Map<String, Object> metadata, ConversionOptions options) {
-        // 如果有标题则添加标题
-        if (options.isIncludeMetadata() && metadata.containsKey("文件名")) {
-            String title = (String) metadata.get("文件名");
-            if (title != null && !title.trim().isEmpty()) {
-                mb.append(mb.h1(mb.escapeMarkdown(title.trim())));
-            }
+        if (options.isIncludeMetadata() && !metadata.isEmpty()){
+            Object title = metadata.get("文件名");
+            mb.header(title, metadata);
         }
-
-        // 如果启用则添加元数据部分
-        if (options.isIncludeMetadata() && !metadata.isEmpty()) {
-            mb.append(mb.h2("文件信息"));
-            List<StringBuilder> meta = new ArrayList<>();
-            for (Map.Entry<String, Object> entry : metadata.entrySet()) {
-                if (entry.getValue() != null) {
-                    String tile = formatMetadataKey(entry.getKey());
-                    // Todo: 关于元数据中的对象 ?
-                    String value = entry.getValue().toString();
-                    meta.add(new StringBuilder().append("**").append(tile).append(":** ").append(value));
-                }
-            }
-            // Todo: 这里可能有问题，需要排查
-            mb.append(mb.unorderedList(meta.toArray(new StringBuilder[meta.size()])));
-            mb.newline();
-        }
-
         // 根据格式处理内容
         mb.append(mb.h2("内容"));
 
@@ -573,8 +552,8 @@ public class TextConverter implements DocumentConverter {
      * @param jsonContent JSON格式的内容字符串
      * @return 包含JSON代码块的Markdown字符串
      */
-    private String convertJsonToMarkdown(String jsonContent) {
-        return "```json\n" + jsonContent + "\n```\n\n";
+    private StringBuilder convertJsonToMarkdown(String jsonContent) {
+        return mb.codeBlock(jsonContent, "json");
     }
 
     /**
@@ -585,8 +564,8 @@ public class TextConverter implements DocumentConverter {
      * @param xmlContent XML格式的内容字符串
      * @return 包含XML代码块的Markdown字符串
      */
-    private String convertXmlToMarkdown(String xmlContent) {
-        return "```xml\n" + xmlContent + "\n```\n\n";
+    private StringBuilder convertXmlToMarkdown(String xmlContent) {
+        return mb.codeBlock(xmlContent, "xml");
     }
 
     /**
@@ -597,7 +576,8 @@ public class TextConverter implements DocumentConverter {
      * @param logContent 日志格式的内容字符串
      * @return 格式化的Markdown字符串
      */
-    private String convertLogToMarkdown(String logContent) {
+    // todo: 这里逻辑有点丑陋
+    private StringBuilder convertLogToMarkdown(String logContent) {
         String[] lines = logContent.split("\\r?\\n");
         StringBuilder markdown = new StringBuilder();
 
@@ -606,11 +586,11 @@ public class TextConverter implements DocumentConverter {
             if (!trimmed.isEmpty()) {
                 // 检测日志级别并相应格式化
                 if (trimmed.toUpperCase().contains("ERROR")) {
-                    markdown.append("**错误:** ").append(trimmed).append("\n");
+                    markdown.append(mb.bold("错误:")).append(trimmed).append("\n");
                 } else if (trimmed.toUpperCase().contains("WARN")) {
-                    markdown.append("**警告:** ").append(trimmed).append("\n");
+                    markdown.append(mb.bold("错误:")).append(trimmed).append("\n");
                 } else if (trimmed.toUpperCase().contains("INFO")) {
-                    markdown.append("*信息:* ").append(trimmed).append("\n");
+                    markdown.append(mb.bold("错误:")).append(trimmed).append("\n");
                 } else {
                     markdown.append(trimmed).append("\n");
                 }
@@ -618,7 +598,7 @@ public class TextConverter implements DocumentConverter {
         }
 
         markdown.append("\n");
-        return markdown.toString();
+        return markdown;
     }
 
     /**
@@ -629,6 +609,7 @@ public class TextConverter implements DocumentConverter {
      * @param textContent 纯文本内容字符串
      * @return 格式化的Markdown字符串
      */
+    // Todo: 感觉有问题，待修改
     private String convertPlainTextToMarkdown(String textContent) {
         String[] lines = textContent.split("\\r?\\n");
         StringBuilder markdown = new StringBuilder();
@@ -664,12 +645,12 @@ public class TextConverter implements DocumentConverter {
      * @param content 要分析的文本内容
      * @return 单词数量统计结果
      */
-    private int countWords(String content) {
-        if (content == null || content.trim().isEmpty()) {
-            return 0;
-        }
-        return content.trim().split("\\s+").length;
-    }
+//    private int countWords(String content) {
+//        if (content == null || content.trim().isEmpty()) {
+//            return 0;
+//        }
+//        return content.trim().split("\\s+").length;
+//    }
 
     /**
      * @brief 从文件名中获取文件扩展名
