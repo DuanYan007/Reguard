@@ -48,8 +48,13 @@ public class XlsxConverter implements DocumentConverter {
         try (FileInputStream fis = new FileInputStream(filePath.toFile());
              Workbook workbook = WorkbookFactory.create(fis)) {
 
-            // 提取元数据
             Map<String, Object> metadata = extractMetadata(workbook, options);
+            // 提取元数据
+            if (options.isIncludeMetadata()) {
+                // 文件基本信息
+                metadata.put("文件名", filePath.getFileName().toString());
+                metadata.put("文件大小", filePath.toFile().length());
+            }
 
             // 将工作簿转换为Markdown格式
             String markdownContent = convertToMarkdown(workbook, metadata, options);
@@ -94,6 +99,7 @@ public class XlsxConverter implements DocumentConverter {
         Map<String, Object> metadata = new HashMap<>();
 
         if (options.isIncludeMetadata()) {
+
             // 工作簿统计信息
             metadata.put("工作表数量", workbook.getNumberOfSheets());
             metadata.put("当前工作表索引(0为起始索引)", workbook.getActiveSheetIndex());
@@ -135,29 +141,9 @@ public class XlsxConverter implements DocumentConverter {
      * @return Markdown格式的内容字符串
      */
     private String convertToMarkdown(Workbook workbook, Map<String, Object> metadata, ConversionOptions options) {
-
-        // 如果有标题则添加标题
-        if (options.isIncludeMetadata() && metadata.containsKey("文件名")) {
-            String title = (String) metadata.get("文件名");
-            if (title != null && !title.trim().isEmpty()) {
-                mb.append(mb.h1(mb.escapeMarkdown(title.trim())));
-            }
-        }
-        // 如果启用则添加元数据部分
-        if (options.isIncludeMetadata() && !metadata.isEmpty()) {
-            mb.append(mb.h2("工作簿信息"));
-            List<StringBuilder> meta = new ArrayList<>();
-            for (Map.Entry<String, Object> entry : metadata.entrySet()) {
-                if (entry.getValue() != null) {
-                    String tile = formatMetadataKey(entry.getKey());
-                    // Todo: 关于元数据中的对象 ?
-                    String value = entry.getValue().toString();
-                    meta.add(new StringBuilder().append("**").append(tile).append(":** ").append(value));
-                }
-            }
-            // Todo: 这里可能有问题，需要排查
-            mb.append(mb.unorderedList(meta.toArray(new StringBuilder[meta.size()])));
-            mb.newline();
+        if (options.isIncludeMetadata() && !metadata.isEmpty()){
+            Object title = metadata.get("文件名");
+            mb.header(title, metadata);
         }
 
         // 处理所有工作表
@@ -260,8 +246,9 @@ public class XlsxConverter implements DocumentConverter {
         List<List<String>> data = new ArrayList<>();
         for(int i = firstRow + 1; i <= lastRow; i++) {
             Row row = sheet.getRow(i);
+            data.add(new ArrayList<>());
             for(Cell cell : row) {
-                data.get(i - firstRow).add(getCellValueAsString(cell).trim());
+                data.get(i - firstRow-1).add(getCellValueAsString(cell).trim());
             }
         }
         String[][] table = data.stream().map(list -> list.toArray(new String[0])).toArray(String[][]::new);

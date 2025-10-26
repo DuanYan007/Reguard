@@ -89,7 +89,7 @@ public class MarkdownBuilder {
      * @param level 标题级别(1-6)
      * @return MarkdownBuilder 构建器实例，支持链式调用
      */
-    public static StringBuilder heading(String text, int level) {
+    public  StringBuilder heading(String text, int level) {
         StringBuilder ans = new StringBuilder();
         if (text == null || text.trim().isEmpty()) {
             return ans;
@@ -156,9 +156,7 @@ public class MarkdownBuilder {
     public StringBuilder paragraph(String text) {
         StringBuilder ans = new StringBuilder();
         if (text != null && !text.trim().isEmpty()) {
-            ans.append(text.trim())
-                   .append(System.lineSeparator())
-                   .append(System.lineSeparator());
+            ans.append(text.trim());
         }
         return ans;
     }
@@ -642,18 +640,18 @@ public class MarkdownBuilder {
      * @param metadata 文档元数据
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder header(String title, Map<String, Object> metadata) {
-        if (title != null && !title.trim().isEmpty()) {
-            heading(title, 1);
+    public MarkdownBuilder header(Object title, Map<String, Object> metadata) {
+        if (title != null) {
+            this.append(heading(escapeMarkdown(title.toString()), 1));
         }
 
         if (metadata != null && !metadata.isEmpty()) {
-            heading("Document Information", 2);
+            this.append(heading("文件信息", 2));
             for (Map.Entry<String, Object> entry : metadata.entrySet()) {
                 if (entry.getValue() != null) {
                     String key = formatMetadataKey(entry.getKey());
-                    String value = formatMetadataValue(entry.getValue());
-                    text("- **").text(key).text(":** ").text(value).newline();
+                    String value = entry.getValue().toString();
+                    text("- **").text(key).text(": ** ").text(value).newline();
                 }
             }
             newline();
@@ -681,22 +679,22 @@ public class MarkdownBuilder {
      * @param data 键值对映射数据
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder tableFromMap(Map<String, String> data) {
-        if (data != null && !data.isEmpty()) {
-            String[] headers = {"Key", "Value"};
-            String[][] rows = new String[data.size()][2];
-
-            int i = 0;
-            for (Map.Entry<String, String> entry : data.entrySet()) {
-                rows[i][0] = entry.getKey() != null ? entry.getKey() : "";
-                rows[i][1] = entry.getValue() != null ? entry.getValue() : "";
-                i++;
-            }
-
-            table(headers, rows);
-        }
-        return this;
-    }
+//    public MarkdownBuilder tableFromMap(Map<String, String> data) {
+//        if (data != null && !data.isEmpty()) {
+//            String[] headers = {"Key", "Value"};
+//            String[][] rows = new String[data.size()][2];
+//
+//            int i = 0;
+//            for (Map.Entry<String, String> entry : data.entrySet()) {
+//                rows[i][0] = entry.getKey() != null ? entry.getKey() : "";
+//                rows[i][1] = entry.getValue() != null ? entry.getValue() : "";
+//                i++;
+//            }
+//
+//            table(headers, rows);
+//        }
+//        return this;
+//    }
 
     /**
      * @brief 从映射列表添加表格
@@ -705,20 +703,20 @@ public class MarkdownBuilder {
      * @param rows    行数据列表，每个映射代表一行
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder tableFromList(String[] headers, List<Map<String, String>> rows) {
-        if (headers != null && headers.length > 0 && rows != null && !rows.isEmpty()) {
-            String[][] tableData = new String[rows.size()][headers.length];
-            for (int i = 0; i < rows.size(); i++) {
-                Map<String, String> row = rows.get(i);
-                for (int j = 0; j < headers.length; j++) {
-                    tableData[i][j] = row != null ? row.getOrDefault(headers[j], "") : "";
-                }
-            }
-
-            table(headers, tableData);
-        }
-        return this;
-    }
+//    public MarkdownBuilder tableFromList(String[] headers, List<Map<String, String>> rows) {
+//        if (headers != null && headers.length > 0 && rows != null && !rows.isEmpty()) {
+//            String[][] tableData = new String[rows.size()][headers.length];
+//            for (int i = 0; i < rows.size(); i++) {
+//                Map<String, String> row = rows.get(i);
+//                for (int j = 0; j < headers.length; j++) {
+//                    tableData[i][j] = row != null ? row.getOrDefault(headers[j], "") : "";
+//                }
+//            }
+//
+//            table(headers, tableData);
+//        }
+//        return this;
+//    }
 
     /**
      * @brief 添加多个段落
@@ -726,16 +724,16 @@ public class MarkdownBuilder {
      * @param paragraphs 段落数组
      * @return MarkdownBuilder 构建器实例
      */
-    public MarkdownBuilder paragraphs(String... paragraphs) {
-        if (paragraphs != null) {
-            for (String paragraph : paragraphs) {
-                if (paragraph != null && !paragraph.trim().isEmpty()) {
-                    paragraph(paragraph);
-                }
-            }
-        }
-        return this;
-    }
+//    public MarkdownBuilder paragraphs(String... paragraphs) {
+//        if (paragraphs != null) {
+//            for (String paragraph : paragraphs) {
+//                if (paragraph != null && !paragraph.trim().isEmpty()) {
+//                    paragraph(paragraph);
+//                }
+//            }
+//        }
+//        return this;
+//    }
 
     /**
      * @brief 添加转义文本
@@ -831,6 +829,7 @@ public class MarkdownBuilder {
      * @param value 元数据值
      * @return String 格式化后的字符串
      */
+    // Todo: 这里不够严谨
     private String formatMetadataValue(Object value) {
         if (value == null) {
             return "";
