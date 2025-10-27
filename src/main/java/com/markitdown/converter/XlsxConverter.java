@@ -142,8 +142,7 @@ public class XlsxConverter implements DocumentConverter {
      */
     private String convertToMarkdown(Workbook workbook, Map<String, Object> metadata, ConversionOptions options) {
         if (options.isIncludeMetadata() && !metadata.isEmpty()){
-            Object title = metadata.get("文件名");
-            mb.header(title, metadata);
+            mb.header(metadata);
         }
 
         // 处理所有工作表

@@ -1,5 +1,6 @@
 package com.markitdown.converter;
 
+import com.markdown.engine.MarkdownBuilder;
 import com.markitdown.api.ConversionResult;
 import com.markitdown.api.DocumentConverter;
 import com.markitdown.config.ConversionOptions;
@@ -32,6 +33,8 @@ public class DocxConverter implements DocumentConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(DocxConverter.class);
 
+    private MarkdownBuilder mb;
+
     /**
      * @brief 将DOCX文件转换为Markdown格式
      * @details 主转换方法，解析Word文档并提取元数据和内容，转换为标准Markdown格式
@@ -43,18 +46,25 @@ public class DocxConverter implements DocumentConverter {
      */
     @Override
     public ConversionResult convert(Path filePath, ConversionOptions options) throws ConversionException {
-        requireNonNull(filePath, "File path cannot be null");
-        requireNonNull(options, "Conversion options cannot be null");
+        requireNonNull(filePath, "文件路径不能为空");
+        requireNonNull(options, "转换选项不能为空");
 
-        logger.info("Converting DOCX file: {}", filePath);
+        logger.info("开始转换 DOCX 文件: {}", filePath);
 
         try (FileInputStream fis = new FileInputStream(filePath.toFile());
              XWPFDocument document = new XWPFDocument(fis)) {
 
-            // Extract metadata
+            // 提取元数据
+
             Map<String, Object> metadata = extractMetadata(document, options);
 
-            // Convert document to Markdown
+            if (options.isIncludeMetadata()) {
+                // 文件基本信息
+                metadata.put("文件名", filePath.getFileName().toString());
+                metadata.put("文件大小", filePath.toFile().length());
+            }
+
+            // 将文档转换为Markdown
             String markdownContent = convertToMarkdown(document, metadata, options);
 
             List<String> warnings = new ArrayList<>();
@@ -63,7 +73,7 @@ public class DocxConverter implements DocumentConverter {
                     filePath.toFile().length(), filePath.getFileName().toString());
 
         } catch (IOException e) {
-            String errorMessage = "Failed to process DOCX file: " + e.getMessage();
+            String errorMessage = "处理DOCX文件失败: " + e.getMessage();
             logger.error(errorMessage, e);
             throw new ConversionException(errorMessage, e, filePath.getFileName().toString(), getName());
         }
@@ -119,9 +129,9 @@ public class DocxConverter implements DocumentConverter {
             // 文档统计信息更可靠
 
             // 文档统计信息
-            metadata.put("paragraphCount", document.getParagraphs().size());
-            metadata.put("tableCount", document.getTables().size());
-            metadata.put("conversionTime", LocalDateTime.now());
+            metadata.put("段落数量", document.getParagraphs().size());
+            metadata.put("表格数量", document.getTables().size());
+            metadata.put("转换时刻", LocalDateTime.now());
         }
 
         return metadata;
@@ -140,25 +150,9 @@ public class DocxConverter implements DocumentConverter {
         StringBuilder markdown = new StringBuilder();
 
         // 如果有标题则添加标题
-        if (options.isIncludeMetadata() && metadata.containsKey("title")) {
-            String title = (String) metadata.get("title");
-            if (title != null && !title.trim().isEmpty()) {
-                markdown.append("# ").append(title.trim()).append("\n\n");
-            }
-        }
-
-        // 如果启用则添加元数据部分
         if (options.isIncludeMetadata() && !metadata.isEmpty()) {
-            markdown.append("## Document Information\n\n");
-            for (Map.Entry<String, Object> entry : metadata.entrySet()) {
-                if (entry.getValue() != null) {
-                    markdown.append("- **").append(formatMetadataKey(entry.getKey()))
-                            .append(":** ").append(entry.getValue()).append("\n");
-                }
-            }
-            markdown.append("\n");
+            mb.header(metadata);
         }
-
         // 处理文档内容
         processDocumentBody(document, markdown, options);
 
@@ -174,7 +168,7 @@ public class DocxConverter implements DocumentConverter {
      * @param options  转换选项配置，不能为null
      */
     private void processDocumentBody(XWPFDocument document, StringBuilder markdown, ConversionOptions options) {
-        markdown.append("## Content\n\n");
+        markdown.append("## 内容\n\n");
 
         // 处理段落
         for (XWPFParagraph paragraph : document.getParagraphs()) {
@@ -204,7 +198,7 @@ public class DocxConverter implements DocumentConverter {
             return;
         }
 
-        // Handle headings based on style
+        // 根据样式处理标题
         String style = paragraph.getStyle();
         if (style != null) {
             if (style.toLowerCase().contains("heading 1") || style.toLowerCase().contains("title")) {
@@ -225,24 +219,25 @@ public class DocxConverter implements DocumentConverter {
             }
         }
 
-        // Handle list items
+        // 处理列表项
         if (isListItem(paragraph)) {
             String indent = getIndent(paragraph);
             markdown.append(indent).append("- ").append(text.trim()).append("\n");
             return;
         }
 
-        // Handle regular paragraphs with formatting
+        // 处理带格式化的普通段落
         String formattedText = processParagraphFormatting(paragraph, text);
         markdown.append(formattedText).append("\n\n");
     }
 
     /**
-     * Processes formatting within a paragraph.
-     *
-     * @param paragraph the paragraph
-     * @param text      the paragraph text
-     * @return formatted text
+     * @brief 处理段落内的格式化
+     * @details 处理段落中的文本格式，包括粗体、斜体、删除线等Markdown格式
+     *          遍历段落中的所有文本运行(run)，应用相应的格式标记
+     * @param paragraph 要处理的段落对象，不能为null
+     * @param text      段落的原始文本内容
+     * @return String 格式化后的文本内容
      */
     private String processParagraphFormatting(XWPFParagraph paragraph, String text) {
         StringBuilder formatted = new StringBuilder();
@@ -253,7 +248,7 @@ public class DocxConverter implements DocumentConverter {
                 continue;
             }
 
-            // Apply formatting
+            // 应用格式化
             if (run.isBold() && run.isItalic()) {
                 formatted.append("***").append(runText).append("***");
             } else if (run.isBold()) {
@@ -271,11 +266,12 @@ public class DocxConverter implements DocumentConverter {
     }
 
     /**
-     * Processes a table and converts it to Markdown.
-     *
-     * @param table    the table to process
-     * @param markdown the markdown output builder
-     * @param options  conversion options
+     * @brief 处理表格并转换为Markdown格式
+     * @details 将Word表格转换为标准的Markdown表格格式
+     *          处理表格行和单元格，添加表头分隔符，确保表格格式正确
+     * @param table    要处理的表格对象，不能为null
+     * @param markdown Markdown输出构建器，不能为null
+     * @param options  转换选项配置，用于控制是否包含表格
      */
     private void processTable(XWPFTable table, StringBuilder markdown, ConversionOptions options) {
         if (!options.isIncludeTables()) {
@@ -289,7 +285,7 @@ public class DocxConverter implements DocumentConverter {
 
         markdown.append("\n");
 
-        // Process each row
+        // 处理每一行
         for (int i = 0; i < rows.size(); i++) {
             XWPFTableRow row = rows.get(i);
             List<XWPFTableCell> cells = row.getTableCells();
@@ -298,7 +294,7 @@ public class DocxConverter implements DocumentConverter {
                 continue;
             }
 
-            // Create table row
+            // 创建表格行
             markdown.append("| ");
             for (XWPFTableCell cell : cells) {
                 String cellText = cell.getText().replace("\n", " ").trim();
@@ -306,7 +302,7 @@ public class DocxConverter implements DocumentConverter {
             }
             markdown.append("\n");
 
-            // Add header separator after first row
+            // 在第一行后添加表头分隔符
             if (i == 0) {
                 markdown.append("|");
                 for (int j = 0; j < cells.size(); j++) {
@@ -320,10 +316,11 @@ public class DocxConverter implements DocumentConverter {
     }
 
     /**
-     * Checks if a paragraph is a list item.
-     *
-     * @param paragraph the paragraph to check
-     * @return true if it's a list item
+     * @brief 检查段落是否为列表项
+     * @details 通过样式名称、编号ID和缩进判断段落是否属于列表
+     *          支持多种列表类型的识别，包括项目符号和编号列表
+     * @param paragraph 要检查的段落对象，不能为null
+     * @return boolean 如果是列表项返回true，否则返回false
      */
     private boolean isListItem(XWPFParagraph paragraph) {
         String style = paragraph.getStyle();
@@ -332,23 +329,24 @@ public class DocxConverter implements DocumentConverter {
                    style.toLowerCase().contains("bullet");
         }
 
-        // Check numbering
+        // 检查编号
         if (paragraph.getNumID() != null) {
             return true;
         }
 
-        // Check indentation (common for list items)
+        // 检查缩进（列表项的常见特征）
         return paragraph.getIndentationLeft() > 0;
     }
 
     /**
-     * Gets the indentation for list items.
-     *
-     * @param paragraph the paragraph
-     * @return indentation string
+     * @brief 获取列表项的缩进
+     * @details 根据段落的左缩进值计算列表项的缩进级别
+     *          使用twips到空格的近似转换，最多支持5级缩进
+     * @param paragraph 要处理的段落对象，不能为null
+     * @return String 缩进空格字符串，每级缩进两个空格
      */
     private String getIndent(XWPFParagraph paragraph) {
-        int indentLevel = (int) (paragraph.getIndentationLeft() / 360); // Approximate twips to spaces
+        int indentLevel = (int) (paragraph.getIndentationLeft() / 360); // twips到空格的近似转换
         StringBuilder indent = new StringBuilder();
         for (int i = 0; i < Math.max(0, Math.min(indentLevel, 5)); i++) {
             indent.append("  ");
@@ -357,13 +355,14 @@ public class DocxConverter implements DocumentConverter {
     }
 
     /**
-     * Formats metadata keys for display.
-     *
-     * @param key the metadata key
-     * @return formatted key
+     * @brief 格式化元数据键名用于显示
+     * @details 将驼峰命名的键名转换为标题格式的大写形式
+     *          提供更好的元数据显示效果
+     * @param key 要格式化的元数据键名，不能为null
+     * @return String 格式化后的键名
      */
     private String formatMetadataKey(String key) {
-        // Convert camelCase to Title Case
+        // 将驼峰命名转换为标题格式
         return key.replaceAll("([a-z])([A-Z])", "$1 $2")
                 .replaceAll("^([a-z])", String.valueOf(Character.toUpperCase(key.charAt(0))))
                 .toLowerCase();

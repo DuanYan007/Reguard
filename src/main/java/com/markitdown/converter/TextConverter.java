@@ -487,8 +487,7 @@ public class TextConverter implements DocumentConverter {
      */
     private String convertToMarkdown(String content, String format, Map<String, Object> metadata, ConversionOptions options) {
         if (options.isIncludeMetadata() && !metadata.isEmpty()){
-            Object title = metadata.get("文件名");
-            mb.header(title, metadata);
+            mb.header(metadata);
         }
         // 根据格式处理内容
         mb.append(mb.h2("内容"));
