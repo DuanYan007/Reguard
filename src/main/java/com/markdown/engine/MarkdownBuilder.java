@@ -276,7 +276,11 @@ public class MarkdownBuilder {
     public StringBuilder unorderedList(StringBuilder... items) {
         return unorderedList(0, items);
     }
-
+    public StringBuilder unorder_item(String text){
+        StringBuilder ans = new StringBuilder();
+        ans.append("- ").append(text).append("\n");
+        return ans;
+    }
     /**
      * @param level 列表缩进级别(0-起始)
      * @param items 列表项数组
