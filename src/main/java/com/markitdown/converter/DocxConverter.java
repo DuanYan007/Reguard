@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -29,6 +30,7 @@ import static java.util.Objects.requireNonNull;
  * 保持文档的层次结构和重要格式信息
  * @since 2.0.0
  */
+// Todo: 基础转换没问题, 图片遗漏了，还有文字与其他位置的相对位置
 public class DocxConverter implements DocumentConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(DocxConverter.class);
@@ -207,9 +209,6 @@ public class DocxConverter implements DocumentConverter {
         }
         //根据样式处理标题
         String style = getStyle(document, paragraph);
-        switch (style) {
-
-        }
         if (style != null) {
             switch (style) {
                 case "Title":
@@ -235,6 +234,7 @@ public class DocxConverter implements DocumentConverter {
                     mb.append(mb.unorder_item(mb.escapeMarkdown(text)));
                     break;
                 case "List Number":
+                    // Todo: 如何获取文字
                     break;
             }
 
@@ -246,9 +246,10 @@ public class DocxConverter implements DocumentConverter {
 //            }
 
             // 处理带格式化的普通段落
-            String formattedText = processParagraphFormatting(paragraph, text);
-            markdown.append(formattedText).append("\n\n");
+            mb.append(processParagraphFormatting(paragraph, text));
+            mb.newline(2);
         }
+    }
 
         /**
          * @param paragraph 要处理的段落对象，不能为null
@@ -258,7 +259,7 @@ public class DocxConverter implements DocumentConverter {
          * @details 处理段落中的文本格式，包括粗体、斜体、删除线等Markdown格式
          * 遍历段落中的所有文本运行(run)，应用相应的格式标记
          */
-        private String processParagraphFormatting (XWPFParagraph paragraph, String text){
+        private StringBuilder processParagraphFormatting (XWPFParagraph paragraph, String text){
             StringBuilder formatted = new StringBuilder();
 
             for (XWPFRun run : paragraph.getRuns()) {
@@ -281,7 +282,7 @@ public class DocxConverter implements DocumentConverter {
                 }
             }
 
-            return formatted.toString();
+            return formatted;
         }
 
         /**
@@ -300,61 +301,33 @@ public class DocxConverter implements DocumentConverter {
             if (rows.isEmpty()) {
                 return;
             }
-
-            markdown.append("\n");
-
+            mb.newline();
+            List<String> header_list = new ArrayList<>();
+            XWPFTableRow header_row = rows.get(0);
+            List<XWPFTableCell> header_cells = header_row.getTableCells();
+            for (XWPFTableCell cell : header_cells) {
+                header_list.add(cell.getText().replace("\n", " ").trim());
+            }
+            List<List<String>> cells_list = new ArrayList<>();
             // 处理每一行
-            for (int i = 0; i < rows.size(); i++) {
+            for (int i = 1; i < rows.size(); i++) {
                 XWPFTableRow row = rows.get(i);
                 List<XWPFTableCell> cells = row.getTableCells();
 
                 if (cells.isEmpty()) {
                     continue;
                 }
-
-                // 创建表格行
-                markdown.append("| ");
+                List<String> cell_list = new ArrayList<>();
+                cells_list.add(cell_list);
                 for (XWPFTableCell cell : cells) {
-                    String cellText = cell.getText().replace("\n", " ").trim();
-                    markdown.append(cellText).append(" | ");
-                }
-                markdown.append("\n");
-
-                // 在第一行后添加表头分隔符
-                if (i == 0) {
-                    markdown.append("|");
-                    for (int j = 0; j < cells.size(); j++) {
-                        markdown.append(" --- |");
-                    }
-                    markdown.append("\n");
+                    cell_list.add(cell.getText().replace("\n", " ").trim());
                 }
             }
-
-            markdown.append("\n");
+            mb.append(mb.table(header_list.toArray(new String[0]), cells_list.stream().map(list -> list.toArray(new String[0])).toArray(String[][]::new)));
+            mb.newline();
         }
 
-        /**
-         * @param paragraph 要检查的段落对象，不能为null
-         * @return boolean 如果是列表项返回true，否则返回false
-         * @brief 检查段落是否为列表项
-         * @details 通过样式名称、编号ID和缩进判断段落是否属于列表
-         * 支持多种列表类型的识别，包括项目符号和编号列表
-         */
-        private boolean isListItem (XWPFParagraph paragraph){
-            String style = paragraph.getStyle();
-            if (style != null) {
-                return style.toLowerCase().contains("list") ||
-                        style.toLowerCase().contains("bullet");
-            }
 
-            // 检查编号
-            if (paragraph.getNumID() != null) {
-                return true;
-            }
-
-            // 检查缩进（列表项的常见特征）
-            return paragraph.getIndentationLeft() > 0;
-        }
 
         /**
          * @param paragraph 要处理的段落对象，不能为null
