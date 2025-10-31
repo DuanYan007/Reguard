@@ -52,8 +52,9 @@ public class TextConverter implements DocumentConverter {
      */
     @Override
     public ConversionResult convert(Path filePath, ConversionOptions options) throws ConversionException {
-        requireNonNull(filePath, "文件路径不能为空");
-        requireNonNull(options, "转换选项不能为空");
+
+        requireNonNull(filePath, "File path cannot be null");
+        requireNonNull(options, "Conversion options cannot be null");
 
         logger.info("正在转换文本文件: {}", filePath);
         // ToDo: MarkdownConfig 并未和 Conversion Options 共享元素，待解决
@@ -78,7 +79,7 @@ public class TextConverter implements DocumentConverter {
                     filePath.toFile().length(), filePath.getFileName().toString());
 
         } catch (IOException e) {
-            String errorMessage = "读取文本文件失败: " + e.getMessage();
+            String errorMessage = "Failed to process text file: " + e.getMessage();
             logger.error(errorMessage, e);
             throw new ConversionException(errorMessage, e, filePath.getFileName().toString(), getName());
         }

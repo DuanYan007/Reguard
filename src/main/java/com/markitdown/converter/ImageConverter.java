@@ -72,17 +72,17 @@ public class ImageConverter implements DocumentConverter {
         logger.info("Converting image file: {}", filePath);
 
         try {
-            // Load the image
+            // 加载图片
             BufferedImage image = ImageIO.read(filePath.toFile());
             if (image == null) {
                 throw new ConversionException("Cannot load image file: " + filePath,
                         filePath.getFileName().toString(), getName());
             }
 
-            // Extract metadata
+            // 提取元数据
             Map<String, Object> metadata = extractMetadata(filePath, image, options);
 
-            // Perform OCR if enabled
+            // 如果启用则执行OCR识别
             String extractedText = "";
             if (options.isUseOcr()) {
                 extractedText = performOcr(image, options);
@@ -90,7 +90,7 @@ public class ImageConverter implements DocumentConverter {
                 extractedText = "*OCR is disabled in conversion options*";
             }
 
-            // Convert to Markdown
+            // 转换为Markdown格式
             String markdownContent = convertToMarkdown(extractedText, metadata, options, filePath);
 
             List<String> warnings = new ArrayList<>();
@@ -121,58 +121,61 @@ public class ImageConverter implements DocumentConverter {
     }
 
     /**
-     * Extracts metadata from the image file.
-     *
-     * @param filePath the image file path
-     * @param image    the loaded image
-     * @param options  conversion options
-     * @return metadata map
+     * @brief 从图片文件中提取元数据
+     * @details 提取图片的尺寸信息、文件信息和颜色类型等元数据
+     *          根据转换选项控制是否包含元数据信息
+     * @param filePath 图片文件路径，不能为null
+     * @param image    已加载的图片对象，不能为null
+     * @param options  转换选项配置，用于控制是否包含元数据
+     * @return Map<String, Object> 包含图片元数据的映射
      */
     private Map<String, Object> extractMetadata(Path filePath, BufferedImage image, ConversionOptions options) {
         Map<String, Object> metadata = new HashMap<>();
 
         if (options.isIncludeMetadata()) {
-            // Image dimensions
-            metadata.put("width", image.getWidth());
-            metadata.put("height", image.getHeight());
+            // 图片尺寸信息
+            metadata.put("宽度", image.getWidth());
+            metadata.put("高度", image.getHeight());
 
-            // File information
-            metadata.put("fileName", filePath.getFileName().toString());
-            metadata.put("fileSize", filePath.toFile().length());
+            // 文件信息
+            metadata.put("文件名", filePath.getFileName().toString());
+            metadata.put("文件尺寸", filePath.toFile().length());
 
-            // Image format
+            // 图片格式
             String fileName = filePath.getFileName().toString();
             String format = getFileExtension(fileName).toLowerCase();
-            metadata.put("format", format);
+            metadata.put("格式", format);
 
-            // Color information
-            metadata.put("colorType", getColorType(image));
-            metadata.put("conversionTime", LocalDateTime.now());
+            // 颜色信息
+            metadata.put("颜色类型", getColorType(image));
+            metadata.put("转换时刻", LocalDateTime.now());
         }
 
         return metadata;
     }
 
     /**
-     * Performs OCR on the image using Tesseract.
-     *
-     * @param image   the image to process
-     * @param options conversion options
-     * @return extracted text
-     * @throws ConversionException if OCR fails
+     * @brief 使用Tesseract对图片进行OCR识别
+     * @details 使用Tesseract OCR引擎从图片中提取文本内容
+     *          支持设置识别语言，并对识别结果进行清理优化
+     * @param image   要进行OCR处理的图片对象，不能为null
+     * @param options 转换选项配置，包含语言设置等参数
+     * @return String OCR识别提取的文本内容
+     * @throws ConversionException 当OCR处理失败时抛出
      */
     private String performOcr(BufferedImage image, ConversionOptions options) throws ConversionException {
         try {
-            // Set language for OCR
+            // 设置OCR识别语言
             String language = options.getLanguage();
             if (!"auto".equals(language) && !language.isEmpty()) {
                 tesseract.setLanguage(language);
             }
 
-            // Perform OCR
+            // 执行OCR识别
             String result = tesseract.doOCR(image);
+            System.out.println(result);
 
-            // Clean up the result
+            // 清理识别结果
             return cleanupOcrResult(result);
 
         } catch (TesseractException e) {
@@ -183,47 +186,49 @@ public class ImageConverter implements DocumentConverter {
     }
 
     /**
-     * Cleans up OCR result by fixing common issues.
-     *
-     * @param ocrText the raw OCR text
-     * @return cleaned text
+     * @brief 清理OCR识别结果中的常见问题
+     * @details 修复OCR识别过程中常见的字符混淆和格式问题
+     *          处理多余的空白字符和常见的识别错误
+     * @param ocrText 原始OCR识别的文本内容
+     * @return String 清理后的文本内容
      */
     private String cleanupOcrResult(String ocrText) {
         if (ocrText == null || ocrText.trim().isEmpty()) {
             return "";
         }
 
-        // Remove excessive whitespace
+        // 移除多余的空白字符
         String cleaned = ocrText.replaceAll("\\s+", " ");
 
-        // Fix common OCR errors
-        cleaned = cleaned.replaceAll("\\|", "I"); // Common confusion between pipe and I
-        cleaned = cleaned.replaceAll("0", "O"); // Common confusion in some contexts
+        // 修复常见的OCR识别错误
+        cleaned = cleaned.replaceAll("\\|", "I"); // 常见的竖线和字母I混淆
+        cleaned = cleaned.replaceAll("0", "O"); // 在某些情况下常见的数字0和字母O混淆
 
-        // Remove leading/trailing whitespace
+        // 移除首尾空白字符
         return cleaned.trim();
     }
 
     /**
-     * Converts extracted text to Markdown format.
-     *
-     * @param extractedText the OCR extracted text
-     * @param metadata      the image metadata
-     * @param options       conversion options
-     * @param filePath      the original file path
-     * @return Markdown formatted content
+     * @brief 将提取的文本转换为Markdown格式
+     * @details 生成包含图片引用、元数据信息和提取文本的完整Markdown文档
+     *          根据转换选项控制各个部分的显示内容
+     * @param extractedText OCR提取的文本内容
+     * @param metadata      图片元数据映射
+     * @param options       转换选项配置，控制输出内容
+     * @param filePath      原始图片文件路径
+     * @return String 格式化的Markdown内容
      */
     private String convertToMarkdown(String extractedText, Map<String, Object> metadata,
                                    ConversionOptions options, Path filePath) {
         StringBuilder markdown = new StringBuilder();
 
-        // Add image reference if enabled
+        // 如果启用则添加图片引用
         if (options.isIncludeImages()) {
             String fileName = filePath.getFileName().toString();
             markdown.append("![Image](").append(fileName).append(")\n\n");
         }
 
-        // Add metadata section if enabled
+        // 如果启用则添加元数据部分
         if (options.isIncludeMetadata() && !metadata.isEmpty()) {
             markdown.append("## Image Information\n\n");
             for (Map.Entry<String, Object> entry : metadata.entrySet()) {
@@ -235,13 +240,13 @@ public class ImageConverter implements DocumentConverter {
             markdown.append("\n");
         }
 
-        // Add extracted text content
+        // 添加提取的文本内容
         markdown.append("## Extracted Text\n\n");
 
         if (extractedText.isEmpty()) {
             markdown.append("*No text could be extracted from this image*\n\n");
         } else {
-            // Format the extracted text for better readability
+            // 格式化提取的文本以提高可读性
             String formattedText = formatExtractedText(extractedText);
             markdown.append(formattedText).append("\n\n");
         }
@@ -250,24 +255,25 @@ public class ImageConverter implements DocumentConverter {
     }
 
     /**
-     * Formats extracted text for better readability.
-     *
-     * @param text the extracted text
-     * @return formatted text
+     * @brief 格式化提取的文本以提高可读性
+     * @details 对OCR提取的文本进行段落分割和格式化处理
+     *          识别可能的标题文本并应用相应的Markdown格式
+     * @param text OCR提取的原始文本内容
+     * @return String 格式化后的文本内容
      */
     private String formatExtractedText(String text) {
         if (text == null || text.trim().isEmpty()) {
             return "";
         }
 
-        // Split into paragraphs and format
+        // 分割为段落并进行格式化
         String[] paragraphs = text.split("\\n\\s*\\n");
         StringBuilder formatted = new StringBuilder();
 
         for (String paragraph : paragraphs) {
             String trimmed = paragraph.trim();
             if (!trimmed.isEmpty()) {
-                // Detect potential headings (short lines followed by longer text)
+                // 检测可能的标题（短行后跟较长文本的情况）
                 if (trimmed.length() < 100 && trimmed.length() > 0 &&
                     Character.isUpperCase(trimmed.charAt(0))) {
                     formatted.append("### ").append(trimmed).append("\n\n");
@@ -281,10 +287,11 @@ public class ImageConverter implements DocumentConverter {
     }
 
     /**
-     * Gets the color type of the image.
-     *
-     * @param image the image to analyze
-     * @return color type description
+     * @brief 获取图片的颜色类型
+     * @details 根据BufferedImage的类型常量返回对应的颜色类型描述
+     *          支持常见的RGB、ARGB、灰度图等颜色模式
+     * @param image 要分析的图片对象，不能为null
+     * @return String 图片颜色类型的描述字符串
      */
     private String getColorType(BufferedImage image) {
         switch (image.getType()) {
@@ -312,10 +319,11 @@ public class ImageConverter implements DocumentConverter {
     }
 
     /**
-     * Gets the file extension from a file name.
-     *
-     * @param fileName the file name
-     * @return the file extension (without the dot), or empty string if no extension
+     * @brief 从文件名中获取文件扩展名
+     * @details 提取文件名中最后一个点号后的部分作为扩展名
+     *          忽略点号在文件名开头或结尾的情况
+     * @param fileName 要提取扩展名的文件名，不能为null
+     * @return String 文件扩展名（不包含点号），如果没有扩展名则返回空字符串
      */
     private String getFileExtension(String fileName) {
         requireNonNull(fileName, "File name cannot be null");
@@ -329,32 +337,35 @@ public class ImageConverter implements DocumentConverter {
     }
 
     /**
-     * Formats metadata keys for display.
-     *
-     * @param key the metadata key
-     * @return formatted key
+     * @brief 格式化元数据键名用于显示
+     * @details 将驼峰命名的键名转换为更适合显示的格式
+     *          在单词间添加空格并转换为小写形式
+     * @param key 要格式化的元数据键名，不能为null
+     * @return String 格式化后的键名
      */
     private String formatMetadataKey(String key) {
-        // Convert camelCase to Title Case
+        // 将驼峰命名转换为标题格式
         return key.replaceAll("([a-z])([A-Z])", "$1 $2")
                 .replaceAll("^([a-z])", String.valueOf(Character.toUpperCase(key.charAt(0))))
                 .toLowerCase();
     }
 
     /**
-     * Checks if a file format is supported by this converter.
-     *
-     * @param fileExtension the file extension
-     * @return true if supported, false otherwise
+     * @brief 检查文件格式是否被此转换器支持
+     * @details 通过比较文件扩展名与预定义的支持格式列表进行判断
+     *          不区分大小写地进行匹配
+     * @param fileExtension 要检查的文件扩展名
+     * @return boolean 如果支持该格式返回true，否则返回false
      */
     public static boolean isSupportedFormat(String fileExtension) {
         return SUPPORTED_FORMATS.contains(fileExtension.toLowerCase());
     }
 
     /**
-     * Gets all supported image formats.
-     *
-     * @return a set of supported file extensions
+     * @brief 获取所有支持的图片格式
+     * @details 返回一个包含此转换器支持的所有图片文件扩展名的集合
+     *          返回的是集合的副本以避免外部修改
+     * @return Set<String> 支持的文件扩展名集合
      */
     public static Set<String> getSupportedFormats() {
         return new HashSet<>(SUPPORTED_FORMATS);
