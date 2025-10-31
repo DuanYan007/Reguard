@@ -1,5 +1,7 @@
 package com.markitdown.converter;
 
+import com.markdown.engine.MarkdownBuilder;
+import com.markdown.engine.config.MarkdownConfig;
 import com.markitdown.api.ConversionResult;
 import com.markitdown.api.DocumentConverter;
 import com.markitdown.config.ConversionOptions;
@@ -34,7 +36,7 @@ import static java.util.Objects.requireNonNull;
 public class HtmlConverter implements DocumentConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(HtmlConverter.class);
-
+    private MarkdownBuilder mb;
     /**
      * @brief 将HTML文件转换为Markdown格式
      * @details 主转换方法，使用Jsoup解析HTML文档，提取元数据和结构化内容
@@ -50,15 +52,16 @@ public class HtmlConverter implements DocumentConverter {
         requireNonNull(options, "Conversion options cannot be null");
 
         logger.info("Converting HTML file: {}", filePath);
+        mb = new MarkdownBuilder(new MarkdownConfig());
 
         try {
-            // Parse HTML document
+            // 解析HTML文档
             Document document = Jsoup.parse(filePath.toFile(), "UTF-8");
 
-            // Extract metadata
+            // 提取元数据
             Map<String, Object> metadata = extractMetadata(document, options);
 
-            // Convert HTML to Markdown
+            // 将HTML转换为Markdown
             String markdownContent = convertToMarkdown(document, metadata, options);
 
             List<String> warnings = new ArrayList<>();
@@ -105,28 +108,29 @@ public class HtmlConverter implements DocumentConverter {
     }
 
     /**
-     * Extracts metadata from the HTML document.
-     *
-     * @param document the HTML document
-     * @param options  conversion options
-     * @return metadata map
+     * @brief 从HTML文档中提取元数据
+     * @details 提取HTML文档的标题、元标签、语言信息和统计数据
+     *          处理各种meta标签类型，包括name和property属性
+     * @param document HTML文档对象，不能为null
+     * @param options  转换选项配置，用于控制是否包含元数据
+     * @return Map<String, Object> 包含HTML元数据的映射
      */
     private Map<String, Object> extractMetadata(Document document, ConversionOptions options) {
         Map<String, Object> metadata = new HashMap<>();
 
         if (options.isIncludeMetadata()) {
-            // Extract title
+            // 提取标题
             String title = document.title();
             if (title != null && !title.trim().isEmpty()) {
-                metadata.put("title", title.trim());
+                metadata.put("文件名", title.trim());
             }
 
-            // Extract meta tags
+            // 提取元标签
             Elements metaTags = document.select("meta");
             for (Element meta : metaTags) {
                 String name = meta.attr("name");
-                String property = meta.attr("property");
-                String content = meta.attr("content");
+                String property = meta.attr("属性");
+                String content = meta.attr("内容");
 
                 if (content != null && !content.trim().isEmpty()) {
                     if (name != null && !name.trim().isEmpty()) {
@@ -137,76 +141,58 @@ public class HtmlConverter implements DocumentConverter {
                 }
             }
 
-            // Extract language
+            // 提取语言信息
             String language = document.select("html").attr("lang");
             if (!language.isEmpty()) {
-                metadata.put("language", language);
+                metadata.put("语言", language);
             }
 
-            // Document statistics
-            metadata.put("headingCount", document.select("h1, h2, h3, h4, h5, h6").size());
-            metadata.put("linkCount", document.select("a[href]").size());
-            metadata.put("imageCount", document.select("img[src]").size());
-            metadata.put("tableCount", document.select("table").size());
-            metadata.put("conversionTime", LocalDateTime.now());
+            // 文档统计信息
+            metadata.put("标题数量", document.select("h1, h2, h3, h4, h5, h6").size());
+            metadata.put("链接数量", document.select("a[href]").size());
+            metadata.put("图片数量", document.select("img[src]").size());
+            metadata.put("表格数量", document.select("table").size());
+            metadata.put("转换时刻", LocalDateTime.now());
         }
 
         return metadata;
     }
 
     /**
-     * Converts HTML document to Markdown format.
-     *
-     * @param document the HTML document
-     * @param metadata the document metadata
-     * @param options  conversion options
-     * @return Markdown formatted content
+     * @brief 将HTML文档转换为Markdown格式
+     * @details 生成包含标题、元数据信息和文档内容的完整Markdown文档
+     *          根据转换选项控制各个部分的显示内容
+     * @param document HTML文档对象，不能为null
+     * @param metadata 文档元数据映射
+     * @param options  转换选项配置，控制输出内容
+     * @return String 格式化的Markdown内容
      */
     private String convertToMarkdown(Document document, Map<String, Object> metadata, ConversionOptions options) {
-        StringBuilder markdown = new StringBuilder();
-
-        // Add title if available
-        if (options.isIncludeMetadata() && metadata.containsKey("title")) {
-            String title = (String) metadata.get("title");
-            if (title != null && !title.trim().isEmpty()) {
-                markdown.append("# ").append(title.trim()).append("\n\n");
-            }
+        if (options.isIncludeMetadata() && !metadata.isEmpty()){
+            mb.header(metadata);
         }
-
-        // Add metadata section if enabled
-        if (options.isIncludeMetadata() && !metadata.isEmpty()) {
-            markdown.append("## Document Information\n\n");
-            for (Map.Entry<String, Object> entry : metadata.entrySet()) {
-                if (entry.getValue() != null && !entry.getKey().equals("title")) {
-                    markdown.append("- **").append(formatMetadataKey(entry.getKey()))
-                            .append(":** ").append(entry.getValue()).append("\n");
-                }
-            }
-            markdown.append("\n");
-        }
-
-        // Process document content
+        // 处理文档内容
         Element body = document.body();
         if (body != null) {
-            processNode(body, markdown, options, 0);
+            processNode(body, options, 0);
         }
 
-        return markdown.toString();
+        return mb.flush();
     }
 
     /**
-     * Processes a node and its children, converting to Markdown.
-     *
-     * @param node     the node to process
-     * @param markdown the markdown output builder
-     * @param options  conversion options
-     * @param depth    the current depth in the document tree
+     * @brief 处理节点及其子节点，转换为Markdown格式
+     * @details 递归处理HTML节点树，根据节点类型转换为对应的Markdown语法
+     *          支持所有常见的HTML元素类型，包括标题、段落、列表、表格等
+     * @param node     要处理的HTML节点，不能为null
+     * @param options  转换选项配置，用于控制转换行为
+     * @param depth    在文档树中的当前深度，用于处理嵌套结构
      */
-    private void processNode(Node node, StringBuilder markdown, ConversionOptions options, int depth) {
+    private void processNode(Node node, ConversionOptions options, int depth) {
         if (node instanceof TextNode) {
             String text = ((TextNode) node).text().trim();
             if (!text.isEmpty()) {
-                markdown.append(text).append(" ");
+                mb.text(mb.escapeMarkdown(text)).text(" ");
             }
         } else if (node instanceof Element) {
             Element element = (Element) node;
@@ -214,88 +200,88 @@ public class HtmlConverter implements DocumentConverter {
 
             switch (tagName) {
                 case "h1":
-                    markdown.append("\n# ").append(element.text()).append("\n\n");
+                    mb.text("\n").append(mb.h1(mb.escapeMarkdown(element.text())));
                     break;
                 case "h2":
-                    markdown.append("\n## ").append(element.text()).append("\n\n");
+                    mb.text("\n").append(mb.h2(mb.escapeMarkdown(element.text())));
                     break;
                 case "h3":
-                    markdown.append("\n### ").append(element.text()).append("\n\n");
+                    mb.text("\n").append(mb.h3(mb.escapeMarkdown(element.text())));
                     break;
                 case "h4":
-                    markdown.append("\n#### ").append(element.text()).append("\n\n");
+                    mb.text("\n").append(mb.h4(mb.escapeMarkdown(element.text())));
                     break;
                 case "h5":
-                    markdown.append("\n##### ").append(element.text()).append("\n\n");
+                    mb.text("\n").append(mb.h5(mb.escapeMarkdown(element.text())));
                     break;
                 case "h6":
-                    markdown.append("\n###### ").append(element.text()).append("\n\n");
+                    mb.text("\n").append(mb.h6(mb.escapeMarkdown(element.text())));
                     break;
                 case "p":
-                    markdown.append("\n");
-                    processChildren(element, markdown, options, depth + 1);
-                    markdown.append("\n\n");
+                    mb.newline();
+                    processChildren(element, options, depth + 1);
+                    mb.newline(2);
                     break;
                 case "br":
-                    markdown.append("  \n");
+                    mb.lineBreak();
                     break;
                 case "strong":
                 case "b":
-                    markdown.append("**");
-                    processChildren(element, markdown, options, depth + 1);
-                    markdown.append("**");
+                    mb.append("**");
+                    processChildren(element, options, depth + 1);
+                    mb.append("**");
                     break;
                 case "em":
                 case "i":
-                    markdown.append("*");
-                    processChildren(element, markdown, options, depth + 1);
-                    markdown.append("*");
+                    mb.append("*");
+                    processChildren(element, options, depth + 1);
+                    mb.append("*");
                     break;
                 case "u":
-                    markdown.append("<u>");
-                    processChildren(element, markdown, options, depth + 1);
-                    markdown.append("</u>");
+                    mb.append("<u>");
+                    processChildren(element, options, depth + 1);
+                    mb.append("</u>");
                     break;
                 case "del":
                 case "s":
                 case "strike":
-                    markdown.append("~~");
-                    processChildren(element, markdown, options, depth + 1);
-                    markdown.append("~~");
+                    mb.append("~~");
+                    processChildren(element, options, depth + 1);
+                    mb.append("~~");
                     break;
                 case "code":
-                    markdown.append("`");
-                    processChildren(element, markdown, options, depth + 1);
-                    markdown.append("`");
+                    mb.append("`");
+                    processChildren(element, options, depth + 1);
+                    mb.append("`");
                     break;
                 case "pre":
                     String codeText = element.text();
-                    markdown.append("\n```\n").append(codeText).append("\n```\n\n");
+                    mb.append("\n```\n").append(mb.escapeCodeInline(codeText)).append("\n```\n\n");
                     break;
                 case "blockquote":
                     String quoteText = element.text();
-                    markdown.append("\n> ").append(quoteText.replace("\n", "\n> ")).append("\n\n");
+                    mb.append("\n> ").append(quoteText.replace("\n", "\n> ")).append("\n\n");
                     break;
                 case "ul":
                 case "ol":
-                    processList(element, markdown, options, depth + 1);
+                    processList(element, options, depth + 1);
                     break;
                 case "li":
-                    processListItem(element, markdown, options, depth + 1);
+                    processListItem(element, options, depth + 1);
                     break;
                 case "a":
-                    processLink(element, markdown, options);
+                    processLink(element, options);
                     break;
                 case "img":
-                    processImage(element, markdown, options);
+                    processImage(element, options);
                     break;
                 case "table":
                     if (options.isIncludeTables()) {
-                        processTable(element, markdown, options);
+                        processTable(element, options);
                     }
                     break;
                 case "hr":
-                    markdown.append("\n---\n\n");
+                    mb.text("\n").horizontalRule();
                     break;
                 case "div":
                 case "section":
@@ -305,10 +291,10 @@ public class HtmlConverter implements DocumentConverter {
                 case "footer":
                 case "nav":
                 case "aside":
-                    // Block elements - process children with appropriate spacing
-                    markdown.append("\n");
-                    processChildren(element, markdown, options, depth + 1);
-                    markdown.append("\n");
+                    // 块级元素 - 处理子元素并添加适当的间距
+                    mb.newline();
+                    processChildren(element, options, depth + 1);
+                    mb.newline();
                     break;
                 case "span":
                 case "small":
@@ -324,119 +310,120 @@ public class HtmlConverter implements DocumentConverter {
                 case "var":
                 case "samp":
                 case "kbd":
-                    // Inline elements - just process children
-                    processChildren(element, markdown, options, depth + 1);
+                    // 内联元素 - 仅处理子元素
+                    processChildren(element, options, depth + 1);
                     break;
                 default:
-                    // Unknown element - try to process children
-                    processChildren(element, markdown, options, depth + 1);
+                    // 未知元素 - 尝试处理子元素
+                    processChildren(element, options, depth + 1);
                     break;
             }
         }
     }
 
     /**
-     * Processes all children of an element.
-     *
-     * @param element  the element whose children to process
-     * @param markdown the markdown output builder
-     * @param options  conversion options
-     * @param depth    the current depth
+     * @brief 处理元素的所有子节点
+     * @details 遍历指定元素的所有子节点，递归调用processNode进行处理
+     *          保持文档的层次结构和嵌套关系
+     * @param element  要处理子节点的父元素，不能为null
+     * @param options  转换选项配置，用于控制转换行为
+     * @param depth    在文档树中的当前深度
      */
-    private void processChildren(Element element, StringBuilder markdown, ConversionOptions options, int depth) {
+    private void processChildren(Element element, ConversionOptions options, int depth) {
         for (Node child : element.childNodes()) {
-            processNode(child, markdown, options, depth);
+            processNode(child, options, depth);
         }
     }
 
     /**
-     * Processes a list element.
-     *
-     * @param list    the list element to process
-     * @param markdown the markdown output builder
-     * @param options  conversion options
-     * @param depth    the current depth
+     * @brief 处理列表元素
+     * @details 处理有序列表(ol)和无序列表(ul)，支持多层嵌套结构
+     *          根据列表类型应用相应的Markdown列表语法
+     * @param list    要处理的列表元素，不能为null
+     * @param options  转换选项配置，用于控制转换行为
+     * @param depth    在文档树中的当前深度，用于计算缩进级别
      */
-    private void processList(Element list, StringBuilder markdown, ConversionOptions options, int depth) {
-        markdown.append("\n");
+    private void processList(Element list, ConversionOptions options, int depth) {
+        mb.append("\n");
         for (Element li : list.select("li")) {
             String indent = "  ".repeat(Math.max(0, depth - 1));
             if (list.tagName().equals("ol")) {
-                markdown.append(indent).append("1. ");
+                mb.append(indent).append("1. ");
             } else {
-                markdown.append(indent).append("- ");
+                mb.append(indent).append("- ");
             }
-            processListItemContent(li, markdown, options, depth);
-            markdown.append("\n");
+            processListItemContent(li, options, depth);
+            mb.append("\n");
         }
-        markdown.append("\n");
+        mb.append("\n");
     }
 
     /**
-     * Processes a list item.
-     *
-     * @param li       the list item to process
-     * @param markdown the markdown output builder
-     * @param options  conversion options
-     * @param depth    the current depth
+     * @brief 处理列表项
+     * @details 处理单个列表项元素，提取其文本内容
+     *          简单的列表项处理，复杂的嵌套结构由processListItemContent处理
+     * @param li       要处理的列表项元素，不能为null
+     * @param options  转换选项配置，用于控制转换行为
+     * @param depth    在文档树中的当前深度
      */
-    private void processListItem(Element li, StringBuilder markdown, ConversionOptions options, int depth) {
+    private void processListItem(Element li, ConversionOptions options, int depth) {
         String text = li.text().trim();
-        markdown.append(text);
+        mb.append(text);
     }
 
     /**
-     * Processes the content of a list item, handling nested lists.
-     *
-     * @param li       the list item
-     * @param markdown the markdown output builder
-     * @param options  conversion options
-     * @param depth    the current depth
+     * @brief 处理列表项的内容，包括嵌套列表
+     * @details 处理列表项中的复杂内容，特别是嵌套的列表结构
+     *          区分普通内容和嵌套列表，采用不同的处理策略
+     * @param li       列表项元素，不能为null
+     * @param options  转换选项配置，用于控制转换行为
+     * @param depth    在文档树中的当前深度，用于计算嵌套级别
      */
-    private void processListItemContent(Element li, StringBuilder markdown, ConversionOptions options, int depth) {
+    private void processListItemContent(Element li, ConversionOptions options, int depth) {
         for (Node child : li.childNodes()) {
             if (child instanceof Element) {
                 Element childElement = (Element) child;
                 if (childElement.tagName().equals("ul") || childElement.tagName().equals("ol")) {
-                    // Handle nested list
-                    processList(childElement, markdown, options, depth + 1);
+                    // 处理嵌套列表
+                    processList(childElement, options, depth + 1);
                 } else {
-                    processNode(child, markdown, options, depth);
+                    processNode(child, options, depth);
                 }
             } else {
-                processNode(child, markdown, options, depth);
+                processNode(child, options, depth);
             }
         }
     }
 
     /**
-     * Processes a link element.
-     *
-     * @param link     the link element to process
-     * @param markdown the markdown output builder
-     * @param options  conversion options
+     * @brief 处理链接元素
+     * @details 将HTML的<a>标签转换为Markdown链接格式
+     *          提取href属性和链接文本，生成标准的Markdown链接语法
+     * @param link     要处理的链接元素，不能为null
+     * @param options  转换选项配置，用于控制转换行为
      */
-    private void processLink(Element link, StringBuilder markdown, ConversionOptions options) {
+    private void processLink(Element link, ConversionOptions options) {
         String href = link.attr("href");
         String text = link.text();
 
         if (!text.isEmpty()) {
             if (!href.isEmpty()) {
-                markdown.append("[").append(text).append("](").append(href).append(")");
+                mb.append("[").append(text).append("](").append(href).append(")");
             } else {
-                markdown.append(text);
+                mb.append(text);
             }
         }
     }
 
     /**
-     * Processes an image element.
-     *
-     * @param img      the image element to process
-     * @param markdown the markdown output builder
-     * @param options  conversion options
+     * @brief 处理图片元素
+     * @details 将HTML的<img>标签转换为Markdown图片格式
+     *          提取src和alt属性，生成标准的Markdown图片语法
+     *          根据转换选项决定是否包含图片内容
+     * @param img      要处理的图片元素，不能为null
+     * @param options  转换选项配置，用于控制是否包含图片
      */
-    private void processImage(Element img, StringBuilder markdown, ConversionOptions options) {
+    private void processImage(Element img, ConversionOptions options) {
         if (!options.isIncludeImages()) {
             return;
         }
@@ -445,22 +432,23 @@ public class HtmlConverter implements DocumentConverter {
         String alt = img.attr("alt");
 
         if (!src.isEmpty()) {
-            markdown.append("![");
+            mb.append("![");
             if (!alt.isEmpty()) {
-                markdown.append(alt);
+                mb.append(alt);
             }
-            markdown.append("](").append(src).append(")");
+            mb.append("](").append(src).append(")");
         }
     }
 
     /**
-     * Processes a table element.
-     *
-     * @param table    the table element to process
-     * @param markdown the markdown output builder
-     * @param options  conversion options
+     * @brief 处理表格元素
+     * @details 将HTML的<table>标签转换为Markdown表格格式
+     *          处理表格行(tr)、表头(th)和数据单元格(td)
+     *          自动添加表头分隔符，确保Markdown表格格式正确
+     * @param table    要处理的表格元素，不能为null
+     * @param options  转换选项配置，用于控制是否包含表格
      */
-    private void processTable(Element table, StringBuilder markdown, ConversionOptions options) {
+    private void processTable(Element table, ConversionOptions options) {
         if (!options.isIncludeTables()) {
             return;
         }
@@ -470,7 +458,7 @@ public class HtmlConverter implements DocumentConverter {
             return;
         }
 
-        markdown.append("\n");
+        mb.append("\n");
 
         boolean isFirstRow = true;
         for (Element row : rows) {
@@ -479,37 +467,25 @@ public class HtmlConverter implements DocumentConverter {
                 continue;
             }
 
-            markdown.append("| ");
+            mb.append("| ");
             for (Element cell : cells) {
                 String cellText = cell.text().trim().replace("|", "\\|");
-                markdown.append(cellText).append(" | ");
+                mb.append(cellText).append(" | ");
             }
-            markdown.append("\n");
+            mb.append("\n");
 
-            // Add header separator after first row
+            // 在第一行后添加表头分隔符
             if (isFirstRow) {
-                markdown.append("|");
+                mb.append("|");
                 for (int i = 0; i < cells.size(); i++) {
-                    markdown.append(" --- |");
+                    mb.append(" --- |");
                 }
-                markdown.append("\n");
+                mb.append("\n");
                 isFirstRow = false;
             }
         }
 
-        markdown.append("\n");
+        mb.append("\n");
     }
 
-    /**
-     * Formats metadata keys for display.
-     *
-     * @param key the metadata key
-     * @return formatted key
-     */
-    private String formatMetadataKey(String key) {
-        // Convert underscores and colons to spaces and capitalize
-        return key.replaceAll("[:_]", " ")
-                .replaceAll("^([a-z])", String.valueOf(Character.toUpperCase(key.charAt(0))))
-                .toLowerCase();
-    }
 }

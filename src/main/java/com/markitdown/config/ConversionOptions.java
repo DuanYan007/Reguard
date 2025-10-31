@@ -71,8 +71,7 @@ public class ConversionOptions {
      * @brief OCR使用配置
      * @details 控制是否对图片和PDF等文件使用OCR进行文本识别
      */
-    private boolean useOcr = false;
-
+    private boolean useOcr = true;
     /**
      * @brief 自定义选项映射
      * @details 存储特定转换器的自定义配置选项

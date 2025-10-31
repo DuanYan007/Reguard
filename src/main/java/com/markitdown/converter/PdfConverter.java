@@ -43,14 +43,14 @@ public class PdfConverter implements DocumentConverter {
      */
     @Override
     public ConversionResult convert(Path filePath, ConversionOptions options) throws ConversionException {
-        Objects.requireNonNull(filePath, "File path cannot be null");
-        Objects.requireNonNull(options, "Conversion options cannot be null");
+        requireNonNull(filePath, "文件路径不能为空");
+        requireNonNull(options, "转换选项不能为空");
 
-        logger.info("Converting PDF file: {}", filePath);
+        logger.info("正在转换PDF文件: {}", filePath);
 
         try (java.io.FileInputStream fis = new java.io.FileInputStream(filePath.toFile());
              PDDocument document = Loader.loadPDF(fis.readAllBytes())) {
-            // Extract metadata
+            // 提取数据
             Map<String, Object> metadata = extractMetadata(document, options);
 
             // Extract text content
@@ -114,15 +114,15 @@ public class PdfConverter implements DocumentConverter {
 
         if (options.isIncludeMetadata()) {
             metadata.put("title", document.getDocumentInformation().getTitle());
-            metadata.put("author", document.getDocumentInformation().getAuthor());
-            metadata.put("subject", document.getDocumentInformation().getSubject());
-            metadata.put("creator", document.getDocumentInformation().getCreator());
-            metadata.put("producer", document.getDocumentInformation().getProducer());
-            metadata.put("creationDate", document.getDocumentInformation().getCreationDate());
-            metadata.put("modificationDate", document.getDocumentInformation().getModificationDate());
-            metadata.put("keywords", document.getDocumentInformation().getKeywords());
-            metadata.put("pageCount", document.getNumberOfPages());
-            metadata.put("conversionTime", LocalDateTime.now());
+            metadata.put("作者", document.getDocumentInformation().getAuthor());
+            metadata.put("主题", document.getDocumentInformation().getSubject());
+            metadata.put("创建者", document.getDocumentInformation().getCreator());
+            metadata.put("生产者", document.getDocumentInformation().getProducer());
+            metadata.put("创建日期", document.getDocumentInformation().getCreationDate());
+            metadata.put("修改日期", document.getDocumentInformation().getModificationDate());
+            metadata.put("关键词", document.getDocumentInformation().getKeywords());
+            metadata.put("页数量", document.getNumberOfPages());
+            metadata.put("转换时刻", LocalDateTime.now());
         }
 
         return metadata;

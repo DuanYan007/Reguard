@@ -120,28 +120,25 @@ public class MarkdownBuilder {
     /**
      * @param text 标题文本
      * @return MarkdownBuilder 构建器实例
-     * @brief 添加1级标题
+     * @brief 添加标题
      */
     public StringBuilder h1(String text) {
         return heading(text, 1);
     }
-
-    /**
-     * @param text 标题文本
-     * @return StringBuilder 构建器实例
-     * @brief 添加2级标题
-     */
     public StringBuilder h2(String text) {
         return heading(text, 2);
     }
-
-    /**
-     * @param text 标题文本
-     * @return MarkdownBuilder 构建器实例
-     * @brief 添加3级标题
-     */
     public StringBuilder h3(String text) {
         return heading(text, 3);
+    }
+    public StringBuilder h4(String text) {
+        return heading(text, 4);
+    }
+    public StringBuilder h5(String text) {
+        return heading(text, 5);
+    }
+    public StringBuilder h6(String text) {
+        return heading(text, 6);
     }
 
     // ==================== 文本方法 ====================
@@ -200,19 +197,6 @@ public class MarkdownBuilder {
         return ans;
     }
 
-    /**
-     * @param text 需要添加删除线的文本
-     * @return MarkdownBuilder 构建器实例
-     * @brief 添加删除线文本
-     * @details 使用~~包裹文本实现删除线效果
-     */
-    public StringBuilder strikethrough(String text) {
-        StringBuilder ans = new StringBuilder();
-        if (text != null) {
-            ans.append("~~").append(text).append("~~");
-        }
-        return ans;
-    }
 
     /**
      * @param text 代码内容
@@ -659,81 +643,6 @@ public class MarkdownBuilder {
     }
 
     /**
-     * @brief 从集合添加列表
-     * @details 将集合转换为Markdown列表并添加到构建器
-     * @param items 集合中的项目
-     * @return MarkdownBuilder 构建器实例
-     */
-//    public MarkdownBuilder listFromCollection(Collection<String> items) {
-//        if (items != null && !items.isEmpty()) {
-//            unorderedList(items.toArray(new String[0]));
-//        }
-//        return this;
-//    }
-
-    /**
-     * @brief 从映射添加表格
-     * @details 将键值对映射转换为两列表格并添加到构建器
-     * @param data 键值对映射数据
-     * @return MarkdownBuilder 构建器实例
-     */
-//    public MarkdownBuilder tableFromMap(Map<String, String> data) {
-//        if (data != null && !data.isEmpty()) {
-//            String[] headers = {"Key", "Value"};
-//            String[][] rows = new String[data.size()][2];
-//
-//            int i = 0;
-//            for (Map.Entry<String, String> entry : data.entrySet()) {
-//                rows[i][0] = entry.getKey() != null ? entry.getKey() : "";
-//                rows[i][1] = entry.getValue() != null ? entry.getValue() : "";
-//                i++;
-//            }
-//
-//            table(headers, rows);
-//        }
-//        return this;
-//    }
-
-    /**
-     * @brief 从映射列表添加表格
-     * @details 将映射列表转换为表格并添加到构建器
-     * @param headers 表格标题数组
-     * @param rows    行数据列表，每个映射代表一行
-     * @return MarkdownBuilder 构建器实例
-     */
-//    public MarkdownBuilder tableFromList(String[] headers, List<Map<String, String>> rows) {
-//        if (headers != null && headers.length > 0 && rows != null && !rows.isEmpty()) {
-//            String[][] tableData = new String[rows.size()][headers.length];
-//            for (int i = 0; i < rows.size(); i++) {
-//                Map<String, String> row = rows.get(i);
-//                for (int j = 0; j < headers.length; j++) {
-//                    tableData[i][j] = row != null ? row.getOrDefault(headers[j], "") : "";
-//                }
-//            }
-//
-//            table(headers, tableData);
-//        }
-//        return this;
-//    }
-
-    /**
-     * @brief 添加多个段落
-     * @details 从数组添加多个段落到构建器
-     * @param paragraphs 段落数组
-     * @return MarkdownBuilder 构建器实例
-     */
-//    public MarkdownBuilder paragraphs(String... paragraphs) {
-//        if (paragraphs != null) {
-//            for (String paragraph : paragraphs) {
-//                if (paragraph != null && !paragraph.trim().isEmpty()) {
-//                    paragraph(paragraph);
-//                }
-//            }
-//        }
-//        return this;
-//    }
-
-    /**
      * @param text 需要转义的文本
      * @return MarkdownBuilder 构建器实例
      * @brief 添加转义文本
@@ -746,15 +655,6 @@ public class MarkdownBuilder {
         return this;
     }
 
-    /**
-     * @param text 需要转义的文本
-     * @return MarkdownBuilder 构建器实例
-     * @brief 添加安全文本
-     * @details 与escaped()方法功能相同，提供更直观的命名
-     */
-    public MarkdownBuilder safeText(String text) {
-        return escaped(text);
-    }
 
     /**
      * @return boolean 是否有效
@@ -908,7 +808,7 @@ public class MarkdownBuilder {
      * @brief 转义行内代码特殊字符
      * @details 为行内代码转义反引号和反斜杠
      */
-    private String escapeCodeInline(String text) {
+     public String escapeCodeInline(String text) {
         if (text == null) {
             return "";
         }
