@@ -3,14 +3,65 @@
 [![Java](https://img.shields.io/badge/Java-11+-orange.svg)](https://openjdk.java.net/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Maven](https://img.shields.io/badge/Maven-3.6+-red.svg)](https://maven.apache.org/)
-[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)](#)
-[![File Size](https://img.shields.io/badge/Size-32MB-green.svg)](#-优化效果)
 
 > **中国网络空间安全协会2025年开源安全奖励项目 - 重写赛道**
 >
 > 本项目是对微软开源项目 MarkItDown 的完整Java重写版本，旨在为中文用户提供更好的文档转换体验
 
 微软 MarkItDown 的 Java 重写版本 - 将各种文档格式转换为 Markdown
+
+## 🚀 快速开始
+
+### 环境要求
+
+- Java 11 或更高版本
+- Maven 3.6+
+- 可选: Tesseract OCR (用于图片文字识别)
+
+### 安装使用
+
+```bash
+# 克隆项目
+git clone https://github.com/DuanYan007/markitdown-java.git
+cd markitdown-java
+
+# 编译打包
+mvn clean package -DskipTests
+
+# 基本使用
+java -jar target/markitdown-java-1.0.0-SNAPSHOT.jar document.pdf
+
+# 指定输出文件
+java -jar target/markitdown-java-1.0.0-SNAPSHOT.jar document.docx -o output.md
+
+# 批量转换
+java -jar target/markitdown-java-1.0.0-SNAPSHOT.jar *.pdf
+```
+
+### 命令行选项
+
+```bash
+Usage: markitdown [OPTIONS] INPUT_FILES...
+
+选项:
+  -o, --output <FILE>          输出文件或目录
+  --include-images            包含图片 (默认: true)
+  --no-images                 排除图片
+  --include-tables            包含表格 (默认: true)
+  --no-tables                 排除表格
+  --include-metadata          包含元数据 (默认: true)
+  --no-metadata               排除元数据
+  --ocr                       使用 OCR 文字识别
+  --language <LANG>           OCR 语言 (默认: auto)
+  --table-format <FORMAT>     表格格式: github, markdown, pipe (默认: github)
+  --image-format <FORMAT>     图片格式: markdown, html, base64 (默认: markdown)
+  --max-file-size <SIZE>      最大文件大小 (默认: 50MB)
+  --temp-dir <DIR>            临时目录
+  -v, --verbose               详细输出
+  -q, --quiet                 静默模式
+  -h, --help                  显示帮助
+  -V, --version               显示版本信息
+```
 
 ## 📋 项目简介
 
@@ -40,7 +91,7 @@ MarkItDown Java 是一个功能强大的文档转换工具，支持将多种文�
 
 | 格式 | 扩展名 | 状态 | 备注 |
 |------|--------|------|------|
-| PDF | .pdf | ✅ 完全支持 | 支持文本和图片提取 |
+| PDF | .pdf | ✅ 完全支持 | 支持文本和图片提取，优化的段落结构保持 |
 | Microsoft Word | .docx, .doc | ✅ 完全支持 | 支持格式化文本和表格 |
 | Microsoft PowerPoint | .pptx, .ppt | ✅ 完全支持 | 支持幻灯片文本和备注 |
 | Microsoft Excel | .xlsx, .xls | ✅ 完全支持 | 支持多工作表处理 |
@@ -48,62 +99,6 @@ MarkItDown Java 是一个功能强大的文档转换工具，支持将多种文�
 | 图片 (OCR) | .jpg, .jpeg, .png, .gif, .bmp, .tiff, .webp | ✅ 完全支持 | 中英文OCR识别 |
 | 音频文件 | .mp3, .wav, .ogg, .flac, .m4a, .aac | ✅ 元数据支持 | 提取音频元数据信息 |
 | 文本文件 | .txt, .csv, .json, .xml, .md, .log | ✅ 完全支持 | 多种编码支持 |
-
-## 🚀 快速开始
-
-### 环境要求
-
-- Java 11 或更高版本
-- Maven 3.6+
-- 可选: Tesseract OCR (用于图片文字识别)
-
-### 安装使用
-
-1. **下载 JAR 包** (32MB 优化版本)
-   ```bash
-   # 下载最新的可执行 JAR 包 (已优化，体积缩减30%)
-   wget https://github.com/DuanYan007/markitdown-java/releases/download/v1.0.0/markitdown-java-1.0.0-SNAPSHOT.jar
-
-   # 文件大小: 32MB (优化前: 46MB)
-   # 包含所有依赖，零配置运行
-   ```
-
-2. **基本使用**
-   ```bash
-   # 转换单个文件
-   java -jar markitdown-java-1.0.0-SNAPSHOT.jar document.pdf
-
-   # 指定输出文件
-   java -jar markitdown-java-1.0.0-SNAPSHOT.jar document.docx -o output.md
-
-   # 批量转换所有PDF文件
-   java -jar markitdown-java-1.0.0-SNAPSHOT.jar *.pdf
-   ```
-
-### 命令行选项
-
-```bash
-Usage: markitdown [OPTIONS] INPUT_FILES...
-
-选项:
-  -o, --output <FILE>          输出文件或目录
-  --include-images            包含图片 (默认: true)
-  --no-images                 排除图片
-  --include-tables            包含表格 (默认: true)
-  --no-tables                 排除表格
-  --include-metadata          包含元数据 (默认: true)
-  --no-metadata               排除元数据
-  --ocr                       使用 OCR 文字识别
-  --language <LANG>           OCR 语言 (默认: auto)
-  --table-format <FORMAT>     表格格式: github, markdown, pipe (默认: github)
-  --image-format <FORMAT>     图片格式: markdown, html, base64 (默认: markdown)
-  --max-file-size <SIZE>      最大文件大小 (默认: 50MB)
-  --temp-dir <DIR>            临时目录
-  -v, --verbose               详细输出
-  -q, --quiet                 静默模式
-  -h, --help                  显示帮助
-  -V, --version               显示版本信息
-```
 
 ## 🔧 开发信息
 
@@ -117,7 +112,6 @@ MarkItDown Java/
 │   ├── config/                  # 配置管理
 │   ├── converter/               # 文档转换器
 │   ├── core/                   # 核心引擎
-│   │   └── markdown/          # 独立Markdown引擎
 │   ├── exception/               # 异常处理
 │   └── utils/                   # 工具类
 ├── src/main/java/com/markdown/engine/  # 独立Markdown引擎
@@ -170,62 +164,6 @@ Map<String, Object> data = Map.of(
 String markdown = engine.convertWithMetadata(data, metadata, config);
 ```
 
-## 📊 性能特性
-
-- **文件大小限制**: 默认 50MB，可配置
-- **内存优化**: 流式处理大文件
-- **并发支持**: 多文件并行处理
-- **错误恢复**: 优雅的错误处理机制
-- **中文支持**: 专门的中文OCR和文本处理
-- **打包优化**: 30% 体积缩减，类文件减少34%
-- **启动性能**: 优化依赖加载，更快的应用启动
-
-## 🧪 测试
-
-项目包含完整的单元测试套件:
-
-- **测试文件数**: 6个主要测试类
-- **测试代码行数**: 1,800+ 行
-- **测试用例数**: 130+ 个
-- **覆盖率**: 核心功能 95%+ 覆盖
-
-运行测试:
-```bash
-mvn test
-```
-
-## 🔨 构建
-
-### 从源码构建
-
-```bash
-# 克隆项目
-git clone https://github.com/DuanYan007/markitdown-java.git
-cd markitdown-java
-
-# 编译打包
-mvn clean package -DskipTests
-
-# JAR 文件位置
-target/markitdown-java-1.0.0-SNAPSHOT.jar
-```
-
-### 开发环境设置
-
-```bash
-# 1. 安装依赖
-mvn clean install
-
-# 2. 运行测试
-mvn test
-
-# 3. 生成测试报告
-mvn jacoco:report
-
-# 4. 构建项目
-mvn clean package
-```
-
 ## 📝 使用示例
 
 ### 基础文档转换
@@ -270,8 +208,6 @@ java -jar markitdown-java-1.0.0-SNAPSHOT.jar 文档夹/* -o ./输出目录/
 
 ## ⚡ 优化效果
 
-### 打包优化成果
-
 通过依赖分析和Maven配置优化，项目在保持完整功能的基础上实现了显著的体积缩减：
 
 | 优化指标 | 优化前 | 优化后 | 改善幅度 |
@@ -283,20 +219,9 @@ java -jar markitdown-java-1.0.0-SNAPSHOT.jar 文档夹/* -o ./输出目录/
 
 ### 优化措施
 
-#### ✅ 依赖优化
-- **移除未使用依赖**: 音频处理库、XML支持等 (~6.5MB)
-- **保留核心功能**: 所有文档转换功能完整保留
-- **精简Jackson**: 仅保留必要的JSON处理组件
-
-#### ✅ 打包优化
-- **启用最小化**: Maven Shade插件移除65%未使用类
-- **排除无用文件**: META-INF冗余文件、文档文件
-- **优化资源**: 移除重复和冗余资源
-
-#### ✅ 功能验证
-- **完整功能测试**: 所有转换功能正常工作
-- **CLI命令验证**: 命令行接口功能完整
-- **性能基准测试**: 处理速度和内存使用优化
+- **依赖优化**: 移除未使用依赖 (~6.5MB)，保留所有核心功能
+- **打包优化**: Maven Shade插件移除65%未使用类
+- **资源优化**: 排除冗余文件和重复资源
 
 ### 优化优势
 
@@ -305,8 +230,6 @@ java -jar markitdown-java-1.0.0-SNAPSHOT.jar 文档夹/* -o ./输出目录/
 - 💾 **内存友好**: 更小的内存占用，适合资源受限环境
 - ⚡ **启动优化**: 减少类加载时间，提升启动性能
 - 🔒 **安全保证**: 移除潜在的安全风险组件
-
----
 
 ## ❓ 常见问题
 
@@ -360,6 +283,23 @@ A: 可通过Maven依赖集成：
 3. 提交更改: `git commit -m 'Add amazing feature'`
 4. 推送分支: `git push origin feature/amazing-feature`
 5. 创建 Pull Request
+
+## 🔨 构建
+
+```bash
+# 克隆项目
+git clone https://github.com/DuanYan007/markitdown-java.git
+cd markitdown-java
+
+# 编译打包
+mvn clean package -DskipTests
+
+# 运行测试
+mvn test
+
+# JAR 文件位置
+target/markitdown-java-1.0.0-SNAPSHOT.jar
+```
 
 ## 📄 许可证
 
