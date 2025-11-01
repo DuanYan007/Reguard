@@ -49,8 +49,6 @@
         <jackson.version>2.16.1</jackson.version>
         <picocli.version>4.7.5</picocli.version>
         <tika.version>2.9.1</tika.version>
-        <mp3spi.version>1.9.5.4</mp3spi.version>
-        <vorbisspi.version>1.1.3.1</vorbisspi.version>
     </properties>
 
     <dependencies>
@@ -110,24 +108,11 @@
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-xml</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <!-- Apache Tika for audio processing and metadata extraction -->
+              <!-- Apache Tika for metadata extraction -->
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
             <version>${tika.version}</version>
-        </dependency>
-
-        <!-- Java Sound SPI for MP3 support -->
-        <dependency>
-            <groupId>com.googlecode.soundlibs</groupId>
-            <artifactId>mp3spi</artifactId>
-            <version>${mp3spi.version}</version>
         </dependency>
 
     
@@ -206,9 +191,16 @@
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/versions/**</exclude>
+                                        <exclude>META-INF/maven/**</exclude>
+                                        <exclude>**/*.md</exclude>
+                                        <exclude>**/*.txt</exclude>
+                                        <exclude>META-INF/services/**</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
+                            <minimizeJar>true</minimizeJar>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
                         </configuration>
                     </execution>
                 </executions>

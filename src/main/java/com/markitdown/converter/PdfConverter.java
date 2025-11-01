@@ -198,15 +198,31 @@ public class PdfConverter implements DocumentConverter {
             return "";
         }
 
-        // Replace multiple consecutive whitespace with single space
-        String cleaned = text.replaceAll("\\s+", " ");
-
-        // Fix common PDF extraction issues
-        cleaned = cleaned.replaceAll("-\\s+", "-"); // Fix hyphenated words
+        // Fix common PDF extraction issues first
+        String cleaned = text.replaceAll("-\\s+", "-"); // Fix hyphenated words
         cleaned = cleaned.replaceAll("\\s*\\f\\s*", "\n\n"); // Form feeds to paragraph breaks
-        cleaned = cleaned.replaceAll("\\s*\\r\\n\\s*", "\n"); // Normalize line endings
+        cleaned = cleaned.replaceAll("\\r\\n", "\n"); // Normalize Windows line endings
+        cleaned = cleaned.replaceAll("\\r", "\n"); // Normalize Mac line endings
 
-        return cleaned.trim();
+        // Handle multiple consecutive empty lines (more than 2 newlines)
+        cleaned = cleaned.replaceAll("\\n{3,}", "\n\n");
+
+        // Replace multiple spaces within lines with single space, but preserve line breaks
+        String[] lines = cleaned.split("\n");
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i].trim();
+            if (!line.isEmpty()) {
+                // Replace multiple spaces with single space within the line
+                line = line.replaceAll(" +", " ");
+                result.append(line);
+            }
+            if (i < lines.length - 1) {
+                result.append("\n");
+            }
+        }
+
+        return result.toString().trim();
     }
 
     /**
@@ -220,24 +236,106 @@ public class PdfConverter implements DocumentConverter {
             return "";
         }
 
-        // Split into paragraphs and format
-        String[] paragraphs = textContent.split("\\n\\s*\\n");
         StringBuilder formatted = new StringBuilder();
 
-        for (String paragraph : paragraphs) {
-            String trimmed = paragraph.trim();
-            if (!trimmed.isEmpty()) {
-                // Detect potential headings (short lines followed by longer text)
-                if (trimmed.length() < 100 && trimmed.length() > 0 &&
-                    (Character.isUpperCase(trimmed.charAt(0)) || trimmed.matches("\\d+\\..*"))) {
-                    formatted.append("### ").append(trimmed).append("\n\n");
+        // Split by lines and process
+        String[] lines = textContent.split("\n");
+
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i].trim();
+
+            if (line.isEmpty()) {
+                // Add paragraph break
+                formatted.append("\n\n");
+                continue;
+            }
+
+            // Check if this might be a heading
+            if (isHeadingLine(line)) {
+                // Add extra spacing before headings if not already there
+                if (formatted.length() > 0 && !formatted.toString().endsWith("\n\n\n")) {
+                    formatted.append("\n");
+                }
+                formatted.append("### ").append(line).append("\n\n");
+            }
+            // Check if this might be a list item
+            else if (isListItem(line)) {
+                formatted.append(line).append("\n");
+            }
+            // Regular paragraph text
+            else {
+                // If next line exists and is not empty, this might be a continuation
+                if (i + 1 < lines.length && !lines[i + 1].trim().isEmpty() &&
+                    !isHeadingLine(lines[i + 1].trim()) && !isListItem(lines[i + 1].trim())) {
+                    // Continue current paragraph
+                    formatted.append(line).append(" ");
                 } else {
-                    formatted.append(trimmed).append("\n\n");
+                    // End of paragraph
+                    formatted.append(line).append("\n\n");
                 }
             }
         }
 
-        return formatted.toString();
+        // Clean up extra newlines
+        String result = formatted.toString();
+        result = result.replaceAll("\\n{3,}", "\n\n");
+
+        return result.trim();
+    }
+
+    /**
+     * Determines if a line is likely a heading.
+     *
+     * @param line the line to check
+     * @return true if the line appears to be a heading
+     */
+    private boolean isHeadingLine(String line) {
+        if (line == null || line.trim().isEmpty()) {
+            return false;
+        }
+
+        // Numbered headings like "1. Introduction"
+        if (line.matches("^\\d+\\.\\s+.*")) {
+            return true;
+        }
+
+        // All caps headings (shorter than 80 chars)
+        if (line.length() < 80 && line.equals(line.toUpperCase()) &&
+            line.matches(".*[A-Z].*") && !line.matches(".*[a-z].*")) {
+            return true;
+        }
+
+        // Title case headings (first letter capitalized, relatively short)
+        if (line.length() < 100 && Character.isUpperCase(line.charAt(0)) &&
+            !line.matches(".*\\.$") && !line.contains(",")) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Determines if a line is a list item.
+     *
+     * @param line the line to check
+     * @return true if the line appears to be a list item
+     */
+    private boolean isListItem(String line) {
+        if (line == null || line.trim().isEmpty()) {
+            return false;
+        }
+
+        // Bulleted lists
+        if (line.matches("^\\s*[-•*]\\s+.*")) {
+            return true;
+        }
+
+        // Numbered lists
+        if (line.matches("^\\s*\\d+[.)]\\s+.*")) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
