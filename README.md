@@ -29,13 +29,13 @@ cd markitdown-java
 mvn clean package -DskipTests
 
 # 基本使用
-java -jar target/markitdown-java-1.0.0-SNAPSHOT.jar document.pdf
+java -jar target/markitdown-java.jar document.pdf
 
 # 指定输出文件
-java -jar target/markitdown-java-1.0.0-SNAPSHOT.jar document.docx -o output.md
+java -jar target/markitdown-java.jar document.docx -o output.md
 
 # 批量转换
-java -jar target/markitdown-java-1.0.0-SNAPSHOT.jar *.pdf
+java -jar target/markitdown-java.jar *.pdf
 ```
 
 ### 命令行选项
