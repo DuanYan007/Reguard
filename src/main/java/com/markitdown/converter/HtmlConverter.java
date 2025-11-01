@@ -256,7 +256,7 @@ public class HtmlConverter implements DocumentConverter {
                     break;
                 case "pre":
                     String codeText = element.text();
-                    mb.append("\n```\n").append(mb.escapeCodeInline(codeText)).append("\n```\n\n");
+                    mb.append("\n```\n").append((codeText)).append("\n```\n\n");
                     break;
                 case "blockquote":
                     String quoteText = element.text();

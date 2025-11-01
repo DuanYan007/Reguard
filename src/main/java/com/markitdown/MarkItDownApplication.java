@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
  * @version 2.0.0
  * @since 2.0.0
  */
-// ToDo: 原版 markitdown 为英文设计，中文呢？
 public class MarkItDownApplication {
 
     private static final Logger logger = LoggerFactory.getLogger(MarkItDownApplication.class);

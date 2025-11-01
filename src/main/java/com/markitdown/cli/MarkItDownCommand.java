@@ -33,7 +33,7 @@ import java.util.concurrent.Callable;
 @Command(
         name = "markitdown",
         mixinStandardHelpOptions = true,
-        version = "MarkItDown-java 2.0.0",
+        version = "MarkItDown-java 1.0.0",
         description = "将各种文档格式转换为Markdown格式",
         footerHeading = "示例:%n",
         footer = {
@@ -402,11 +402,6 @@ public class MarkItDownCommand implements Callable<Integer> {
         return fileName;
     }
 
-    /**
-     * Main entry point for the CLI.
-     *
-     * @param args command line arguments
-     */
     public static void main(String[] args) {
         int exitCode = new CommandLine(new MarkItDownCommand()).execute(args);
         System.exit(exitCode);
