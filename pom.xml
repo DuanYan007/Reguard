@@ -183,6 +183,13 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.markitdown.MarkItDownApplication</mainClass>
                                 </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/spring.handlers</resource>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/spring.schemas</resource>
+                                </transformer>
                             </transformers>
                             <filters>
                                 <filter>
@@ -195,11 +202,36 @@
                                         <exclude>META-INF/maven/**</exclude>
                                         <exclude>**/*.md</exclude>
                                         <exclude>**/*.txt</exclude>
-                                        <exclude>META-INF/services/**</exclude>
                                     </excludes>
                                 </filter>
+                                <!-- 保留XMLBeans相关类 -->
+                                <filter>
+                                    <artifact>org.apache.xmlbeans:xmlbeans</artifact>
+                                    <includes>
+                                        <include>**</include>
+                                    </includes>
+                                </filter>
+                                <!-- 保留POI相关类 -->
+                                <filter>
+                                    <artifact>org.apache.poi:poi*</artifact>
+                                    <includes>
+                                        <include>**</include>
+                                    </includes>
+                                </filter>
+                                <!-- 保留日志相关类 -->
+                                <filter>
+                                    <artifact>ch.qos.logback:*</artifact>
+                                    <includes>
+                                        <include>**</include>
+                                    </includes>
+                                </filter>
+                                <filter>
+                                    <artifact>org.slf4j:*</artifact>
+                                    <includes>
+                                        <include>**</include>
+                                    </includes>
+                                </filter>
                             </filters>
-                            <minimizeJar>true</minimizeJar>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                         </configuration>
                     </execution>
