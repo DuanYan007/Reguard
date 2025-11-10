@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通用文件转换器 - 转换为Markdown</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-file-export me-2"></i>
+                文件转换器
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-1"></i>首页
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="fileConverter.showHistory()">
+                            <i class="fas fa-history me-1"></i>历史记录
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid main-container">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-md-3 col-lg-2 sidebar">
+                <div class="sidebar-content">
+                    <h6 class="sidebar-title">文件格式分类</h6>
+
+                    <!-- 文档格式 -->
+                    <div class="format-category">
+                        <div class="category-header" onclick="fileConverter.showFormatCategory('document')">
+                            <i class="fas fa-file-alt text-primary me-2"></i>
+                            <span>文档格式</span>
+                            <i class="fas fa-chevron-down ms-auto category-arrow"></i>
+                        </div>
+                        <div class="category-items" id="document-items">
+                            <a href="#" class="format-item" data-format="pdf" onclick="fileConverter.showUploadArea('pdf')">
+                                <i class="fas fa-file-pdf text-danger me-2"></i>PDF
+                            </a>
+                            <a href="#" class="format-item" data-format="word" onclick="fileConverter.showUploadArea('word')">
+                                <i class="fas fa-file-word text-primary me-2"></i>Word
+                            </a>
+                            <a href="#" class="format-item" data-format="ppt" onclick="fileConverter.showUploadArea('ppt')">
+                                <i class="fas fa-file-powerpoint text-warning me-2"></i>PowerPoint
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 表格格式 -->
+                    <div class="format-category">
+                        <div class="category-header" onclick="fileConverter.showFormatCategory('spreadsheet')">
+                            <i class="fas fa-table text-success me-2"></i>
+                            <span>表格格式</span>
+                            <i class="fas fa-chevron-down ms-auto category-arrow"></i>
+                        </div>
+                        <div class="category-items" id="spreadsheet-items">
+                            <a href="#" class="format-item" data-format="excel" onclick="fileConverter.showUploadArea('excel')">
+                                <i class="fas fa-file-excel text-success me-2"></i>Excel
+                            </a>
+                            <a href="#" class="format-item" data-format="csv" onclick="fileConverter.showUploadArea('csv')">
+                                <i class="fas fa-file-csv text-info me-2"></i>CSV
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Web格式 -->
+                    <div class="format-category">
+                        <div class="category-header" onclick="fileConverter.showFormatCategory('web')">
+                            <i class="fas fa-globe text-info me-2"></i>
+                            <span>Web格式</span>
+                            <i class="fas fa-chevron-down ms-auto category-arrow"></i>
+                        </div>
+                        <div class="category-items" id="web-items">
+                            <a href="#" class="format-item" data-format="html" onclick="fileConverter.showUploadArea('html')">
+                                <i class="fas fa-file-code text-warning me-2"></i>HTML
+                            </a>
+                            <a href="#" class="format-item" data-format="json" onclick="fileConverter.showUploadArea('json')">
+                                <i class="fas fa-file-code text-secondary me-2"></i>JSON
+                            </a>
+                            <a href="#" class="format-item" data-format="xml" onclick="fileConverter.showUploadArea('xml')">
+                                <i class="fas fa-file-code text-brown me-2"></i>XML
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 媒体格式 -->
+                    <div class="format-category">
+                        <div class="category-header" onclick="fileConverter.showFormatCategory('media')">
+                            <i class="fas fa-photo-video text-purple me-2"></i>
+                            <span>媒体格式</span>
+                            <i class="fas fa-chevron-down ms-auto category-arrow"></i>
+                        </div>
+                        <div class="category-items" id="media-items">
+                            <a href="#" class="format-item" data-format="image" onclick="fileConverter.showUploadArea('image')">
+                                <i class="fas fa-image text-pink me-2"></i>图片
+                            </a>
+                            <a href="#" class="format-item" data-format="audio" onclick="fileConverter.showUploadArea('audio')">
+                                <i class="fas fa-file-audio text-info me-2"></i>音频
+                            </a>
+                            <a href="#" class="format-item" data-format="video" onclick="fileConverter.showUploadArea('video')">
+                                <i class="fas fa-file-video text-danger me-2"></i>视频
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 批量转换 -->
+                    <div class="format-category">
+                        <a href="#" class="format-item" data-format="batch" onclick="fileConverter.showBatchUploadArea()">
+                            <i class="fas fa-layer-group text-primary me-2"></i>批量转换
+                            <i class="fas fa-info-circle text-muted ms-auto" title="支持ZIP/RAR压缩包批量转换多种格式文件"></i>
+                        </a>
+                    </div>
+
+                  </div>
+            </div>
+
+            <!-- 主内容区域 -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- 欢迎页面 -->
+                <div id="welcomePage" class="content-page">
+                    <div class="welcome-card">
+                        <div class="text-center">
+                            <i class="fas fa-file-export text-primary mb-4" style="font-size: 4rem;"></i>
+                            <h1 class="display-6 fw-bold mb-3">通用文件转换器</h1>
+                            <p class="lead text-muted mb-4">
+                                将各种格式文件转换为Markdown文档，支持实时预览
+                            </p>
+                            <div class="row text-start">
+                                <div class="col-md-4">
+                                    <div class="feature-card">
+                                        <i class="fas fa-layer-group text-primary mb-3"></i>
+                                        <h5>格式分类</h5>
+                                        <p class="text-muted">按文件类型分类处理，针对性更强</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="feature-card">
+                                        <i class="fas fa-eye text-info mb-3"></i>
+                                        <h5>实时预览</h5>
+                                        <p class="text-muted">转换结果支持浏览器实时预览</p>
+                                    </div>
+                                </div>
+                              </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 上传页面 -->
+                <div id="uploadPage" class="content-page" style="display: none;">
+                    <div class="page-header">
+                        <button class="btn btn-outline-secondary btn-sm me-3" onclick="fileConverter.showWelcome()">
+                            <i class="fas fa-arrow-left me-1"></i>返回
+                        </button>
+                        <h3 id="formatTitle" class="mb-0">文件上传</h3>
+                    </div>
+
+                    <!-- 文件上传 -->
+                    <div class="row">
+                        <div class="col-12 mb-4">
+                            <div class="upload-card">
+                                <h5 class="card-title">
+                                    <i class="fas fa-file-upload me-2"></i>文件上传
+                                </h5>
+                                <div class="single-upload-area" id="singleUploadArea">
+                                    <div class="upload-content">
+                                        <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-3"></i>
+                                        <h6>点击选择文件</h6>
+                                        <p class="text-muted small" id="singleFormatHint">支持格式：请选择文件类型</p>
+                                        <input type="file" id="singleFileInput" class="d-none">
+                                        <button class="btn btn-primary" type="button" id="selectFileButton">
+                                            <i class="fas fa-folder-open me-2"></i>选择文件
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="single-file-info mt-3" id="singleFileInfo" style="display: none;">
+                                    <div class="file-preview">
+                                        <i class="fas fa-file file-preview-icon"></i>
+                                        <div class="file-details">
+                                            <div class="file-name" id="singleFileName"></div>
+                                            <div class="file-size" id="singleFileSize"></div>
+                                            <div class="text-success small mt-1">
+                                                <i class="fas fa-check-circle me-1"></i>
+                                                <span id="uploadStatus">文件已上传，可以开始转换</span>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-success btn-sm" onclick="fileConverter.convertSingle()" id="convertButton">
+                                            <i class="fas fa-cogs me-1"></i>转换
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 进度显示 -->
+                    <div class="progress-container" id="progressContainer" style="display: none;">
+                        <h5><i class="fas fa-spinner me-2"></i>转换进度</h5>
+                        <div class="progress mb-2">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 id="progressBar" role="progressbar" style="width: 0%">
+                                0%
+                            </div>
+                        </div>
+                        <small class="text-muted" id="progressText">准备中...</small>
+                    </div>
+                </div>
+
+                <!-- 预览页面 -->
+                <div id="previewPage" class="content-page" style="display: none;">
+                    <div class="page-header">
+                        <button class="btn btn-outline-secondary btn-sm me-3" onclick="fileConverter.backToUpload()">
+                            <i class="fas fa-arrow-left me-1"></i>返回上传
+                        </button>
+                        <h3 class="mb-0" id="previewTitle">转换结果预览</h3>
+                        <div class="ms-auto">
+                            <button class="btn btn-success btn-sm me-2" onclick="fileConverter.downloadCurrent()">
+                                <i class="fas fa-download me-1"></i>下载
+                            </button>
+                            <button class="btn btn-info btn-sm" onclick="fileConverter.copyToClipboard()">
+                                <i class="fas fa-copy me-1"></i>复制
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="preview-container">
+                        <div class="preview-toolbar">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm active" onclick="fileConverter.switchPreviewMode('render')">
+                                    <i class="fas fa-eye me-1"></i>渲染预览
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="fileConverter.switchPreviewMode('raw')">
+                                    <i class="fas fa-code me-1"></i>原始Markdown
+                                </button>
+                            </div>
+                            <div class="ms-auto">
+                                <span class="text-muted" id="previewInfo"></span>
+                            </div>
+                        </div>
+                        <div class="preview-content" id="previewContent">
+                            <!-- 预览内容将在这里显示 -->
+                        </div>
+                        <div class="preview-code" id="previewCode" style="display: none;">
+                            <pre><code class="language-markdown" id="previewRawContent"></code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 批量转换页面 -->
+                <div id="batchUploadPage" class="content-page" style="display: none;">
+                    <div class="page-header">
+                        <button class="btn btn-outline-secondary btn-sm me-3" onclick="fileConverter.showWelcome()">
+                            <i class="fas fa-arrow-left me-1"></i>返回
+                        </button>
+                        <h3 class="mb-0">批量文件转换</h3>
+                        <div class="ms-auto">
+                            <button class="btn btn-success btn-sm" id="convertAllButton" onclick="fileConverter.convertAllBatch()" disabled>
+                                <i class="fas fa-play me-1"></i>转换全部
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 压缩包上传 -->
+                    <div class="row">
+                        <div class="col-12 mb-4">
+                            <div class="upload-card">
+                                <h5 class="card-title">
+                                    <i class="fas fa-file-archive me-2"></i>上传压缩包
+                                </h5>
+
+                                <!-- 密码输入区域 -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="archivePassword" class="form-label">
+                                                <i class="fas fa-key me-1"></i>解压密码（可选）
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" id="archivePassword"
+                                                       placeholder="请输入密码，如无密码可留空">
+                                                <button class="btn btn-outline-secondary" type="button" id="togglePassword" onclick="fileConverter.togglePasswordVisibility()">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 批量上传区域 -->
+                                <div class="batch-upload-area" id="batchUploadArea">
+                                    <div class="upload-content">
+                                        <i class="fas fa-file-archive fa-2x text-muted mb-3"></i>
+                                        <h6>拖拽ZIP/RAR文件到此处或点击选择</h6>
+                                        <p class="text-muted small">支持格式：ZIP, RAR（支持密码保护）</p>
+                                        <input type="file" id="batchFileInput" class="d-none" accept=".zip,.rar">
+                                        <button class="btn btn-primary" type="button" id="selectBatchFileButton">
+                                            <i class="fas fa-folder-open me-2"></i>选择压缩包
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 压缩包信息 -->
+                                <div class="batch-archive-info mt-3" id="batchArchiveInfo" style="display: none;">
+                                    <div class="file-preview">
+                                        <i class="fas fa-file-archive file-preview-icon"></i>
+                                        <div class="file-details">
+                                            <div class="file-name" id="batchArchiveName"></div>
+                                            <div class="file-size" id="batchArchiveSize"></div>
+                                            <div class="text-success small mt-1">
+                                                <i class="fas fa-check-circle me-1"></i>
+                                                <span id="archiveExtractStatus">文件已上传，正在解压...</span>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-info btn-sm" onclick="fileConverter.extractArchive()" id="extractButton">
+                                            <i class="fas fa-unzip me-1"></i>解压
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 文件列表 -->
+                    <div class="batch-files-container" id="batchFilesContainer" style="display: none;">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5>
+                                        <i class="fas fa-layer-group me-2"></i>
+                                        文件列表 (<span id="fileCount">0</span>)
+                                    </h5>
+                                    <div>
+                                        <button class="btn btn-outline-primary btn-sm me-2" onclick="fileConverter.selectAllFiles()">
+                                            <i class="fas fa-check-square me-1"></i>全选
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" onclick="fileConverter.deselectAllFiles()">
+                                            <i class="fas fa-square me-1"></i>取消全选
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="batch-files-list" id="batchFilesList">
+                                    <!-- 文件列表将在这里显示 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 批量进度显示 -->
+                    <div class="batch-progress-container" id="batchProgressContainer" style="display: none;">
+                        <h5><i class="fas fa-tasks me-2"></i>批量转换进度</h5>
+                        <div class="batch-overview mb-3">
+                            <div class="progress mb-2">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                     id="batchOverallProgress" role="progressbar" style="width: 0%">
+                                    0%
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                总进度: <span id="batchProgressText">准备中...</span>
+                            </small>
+                        </div>
+
+                        <div class="batch-files-progress" id="batchFilesProgress">
+                            <!-- 各文件转换进度将在这里显示 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 历史记录页面 -->
+                <div id="historyPage" class="content-page" style="display: none;">
+                    <div class="page-header">
+                        <button class="btn btn-outline-secondary btn-sm me-3" onclick="fileConverter.showWelcome()">
+                            <i class="fas fa-arrow-left me-1"></i>返回
+                        </button>
+                        <h3 class="mb-0">转换历史记录</h3>
+                        <div class="ms-auto">
+                            <button class="btn btn-danger btn-sm" onclick="fileConverter.clearHistory()">
+                                <i class="fas fa-trash me-1"></i>清空历史
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="history-container">
+                        <div id="historyList" class="history-list">
+                            <!-- 历史记录将在这里显示 -->
+                        </div>
+                        <div id="emptyHistory" class="empty-history" style="display: none;">
+                            <div class="text-center py-5">
+                                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">暂无转换记录</h5>
+                                <p class="text-muted">开始转换文件后，历史记录将显示在这里</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                            </div>
+        </div>
+    </div>
+
+    <footer class="bg-light py-3">
+        <div class="container-fluid text-center">
+            <p class="text-muted mb-0">
+                <i class="fas fa-code me-1"></i>
+                通用文件转换器 &copy; 2025 | 支持多种格式文件转换为Markdown | Author: DuanYan007
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
