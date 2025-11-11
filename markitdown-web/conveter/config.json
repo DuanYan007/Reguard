@@ -5,8 +5,8 @@
     "debug": true
   },
   "storage": {
-    "upload_folder": "uploads",
-    "download_folder": "downloads",
+    "upload_folder": "O:/Project/markitdown/uploads",
+    "download_folder": "O:\\Project\\markitdown\\markitdown-web\\conveter\\downloads",
     "history_file": "history.json"
   },
   "limits": {

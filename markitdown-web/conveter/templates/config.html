@@ -302,6 +302,9 @@
 
         async function saveConfig() {
             try {
+                // 显示保存进度
+                showMigrationProgress();
+
                 // 收集表单数据
                 const newConfig = {
                     app: {
@@ -320,6 +323,8 @@
                     }
                 };
 
+                updateProgressStatus('正在验证配置路径...', 10);
+
                 const response = await fetch('/api/config', {
                     method: 'PUT',
                     headers: {
@@ -328,17 +333,119 @@
                     body: JSON.stringify(newConfig)
                 });
 
+                updateProgressStatus('正在处理配置...', 50);
                 const result = await response.json();
 
                 if (result.success) {
-                    showMessage('配置保存成功！部分配置可能需要重启应用才能生效。', 'success');
+                    updateProgressStatus('配置保存成功！', 100);
+
+                    // 显示详细结果
+                    let message = '配置保存成功！部分配置可能需要重启应用才能生效。';
+                    if (result.requires_migration) {
+                        message = `配置保存成功！已迁移 ${result.migrated_files_count} 个文件到新位置。`;
+                        if (result.migration_details) {
+                            showMigrationDetails(result.migration_details);
+                        }
+                    }
+
+                    showMessage(message, result.requires_migration ? 'info' : 'success');
                     originalConfig = JSON.parse(JSON.stringify(newConfig));
                 } else {
+                    updateProgressStatus('保存失败', 0);
                     showMessage('保存配置失败: ' + result.message, 'danger');
                 }
+
+                // 隐藏进度条（延迟显示）
+                setTimeout(() => hideMigrationProgress(), 2000);
+
             } catch (error) {
+                updateProgressStatus('保存配置异常: ' + error.message, 0);
                 showMessage('保存配置异常: ' + error.message, 'danger');
+                setTimeout(() => hideMigrationProgress(), 3000);
             }
+        }
+
+        function showMigrationProgress() {
+            const progressHtml = `
+                <div id="migrationProgress" class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small" id="progressStatus">准备保存配置...</span>
+                        <span class="text-muted small" id="progressPercentage">0%</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                             id="progressBar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+            `;
+
+            // 在保存按钮后面插入进度条
+            const saveButton = document.querySelector('button[onclick="saveConfig()"]');
+            saveButton.insertAdjacentHTML('afterend', progressHtml);
+        }
+
+        function hideMigrationProgress() {
+            const progress = document.getElementById('migrationProgress');
+            if (progress) {
+                progress.remove();
+            }
+        }
+
+        function updateProgressStatus(status, percentage) {
+            const statusEl = document.getElementById('progressStatus');
+            const percentageEl = document.getElementById('progressPercentage');
+            const progressBar = document.getElementById('progressBar');
+
+            if (statusEl) statusEl.textContent = status;
+            if (percentageEl) percentageEl.textContent = percentage + '%';
+            if (progressBar) {
+                progressBar.style.width = percentage + '%';
+                if (percentage === 100) {
+                    progressBar.classList.remove('progress-bar-animated');
+                    progressBar.classList.add('bg-success');
+                } else if (percentage === 0) {
+                    progressBar.classList.remove('progress-bar-animated');
+                    progressBar.classList.add('bg-danger');
+                }
+            }
+        }
+
+        function showMigrationDetails(details) {
+            const detailsHtml = `
+                <div class="alert alert-info mt-3" id="migrationDetails">
+                    <h6><i class="fas fa-info-circle me-2"></i>文件迁移详情</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>原始路径:</strong>
+                            <ul class="small mt-1">
+                                <li>上传: ${details.old_paths.upload_folder || 'uploads'}</li>
+                                <li>下载: ${details.old_paths.download_folder || 'downloads'}</li>
+                                <li>历史: ${details.old_paths.history_file || 'history.json'}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>新路径:</strong>
+                            <ul class="small mt-1">
+                                <li>上传: ${details.new_paths.upload_folder}</li>
+                                <li>下载: ${details.new_paths.download_folder}</li>
+                                <li>历史: ${details.new_paths.history_file}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    ${details.migrated_files && details.migrated_files.length > 0 ? `
+                        <details class="mt-2">
+                            <summary class="small">查看迁移文件列表 (${details.migrated_files.length} 个文件)</summary>
+                            <div class="small text-muted mt-2" style="max-height: 200px; overflow-y: auto;">
+                                ${details.migrated_files.map(file => `<div>• ${file}</div>`).join('')}
+                            </div>
+                        </details>
+                    ` : ''}
+                </div>
+            `;
+
+            // 在状态消息区域插入详情
+            const messageContainer = document.getElementById('statusMessage');
+            messageContainer.insertAdjacentHTML('beforeend', detailsHtml);
         }
 
         async function reloadConfig() {
@@ -430,35 +537,76 @@
         }
 
         // 文件夹选择功能
-      async function selectFolder(inputId) {
-        try {
-            // 创建隐藏的input元素
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.webkitdirectory = true;
-            input.style.display = 'none';
+        async function selectFolder(inputId) {
+            // 由于浏览器安全限制，我们使用提示框让用户手动输入路径
+            const currentPath = document.getElementById(inputId).value;
 
-            input.onchange = function(e) {
-                const files = e.target.files;
-                if (files && files.length > 0) {
-                    // 获取文件夹路径（取第一个文件的父目录）
-                    const filePath = files[0].webkitRelativePath;
-                    const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
-                    document.getElementById(inputId).value = folderPath || files[0].name.split('/')[0];
+            // 提供路径建议
+            const pathSuggestions = [
+                'O:/Project/markitdown/new_uploads',
+                'O:/Project/markitdown/new_downloads',
+                'D:/MarkItDown/uploads',
+                'C:/Users/' + (navigator.userAgent.includes('Windows') ? 'Public' : 'user') + '/Documents/MarkItDown'
+            ];
+
+            const suggestion = pathSuggestions.find(s => s.includes(inputId.includes('upload') ? 'upload' : 'download')) || currentPath;
+
+            const path = prompt(
+                `请输入${inputId.includes('upload') ? '上传' : '下载'}文件夹的完整路径:\n\n` +
+                `示例路径:\n${pathSuggestions.slice(0, 3).join('\n')}\n\n` +
+                `当前路径: ${currentPath}`,
+                suggestion
+            );
+
+            if (path && path.trim() !== '') {
+                // 验证路径格式
+                if (!path.includes(':') && !path.startsWith('/')) {
+                    alert('请输入完整的绝对路径（如：O:/Project/markitdown/uploads）');
+                    return;
                 }
-                document.body.removeChild(input);
-            };
 
-            document.body.appendChild(input);
-            input.click();
-        } catch (error) {
-            // 如果不支持文件夹选择，使用传统方式
-            const path = prompt('请输入文件夹路径:', document.getElementById(inputId).value);
-            if (path) {
-                document.getElementById(inputId).value = path;
+                document.getElementById(inputId).value = path.trim();
+
+                // 显示更新的反馈
+                const inputElement = document.getElementById(inputId);
+                inputElement.classList.add('is-valid');
+                inputElement.style.borderColor = '#28a745';
+
+                // 显示提示信息
+                showPathUpdateMessage(inputId, path.trim());
+
+                setTimeout(() => {
+                    inputElement.classList.remove('is-valid');
+                    inputElement.style.borderColor = '';
+                }, 3000);
             }
         }
-    }
+
+        function showPathUpdateMessage(inputId, newPath) {
+            const fieldName = inputId.includes('upload') ? '上传' :
+                          inputId.includes('download') ? '下载' : '历史文件';
+
+            const messageHtml = `
+                <div class="alert alert-info alert-dismissible fade show" role="alert" id="pathUpdateMessage">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>路径已更新</strong>: ${fieldName}目录将设置为 <code>${newPath}</code>
+                    <br><small class="text-muted">保存配置后，系统将自动迁移现有文件到新位置</small>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+            const messageContainer = document.getElementById('statusMessage');
+            messageContainer.insertAdjacentHTML('beforeend', messageHtml);
+
+            // 3秒后自动移除
+            setTimeout(() => {
+                const alert = document.getElementById('pathUpdateMessage');
+                if (alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            }, 5000);
+        }
 
     // 文件选择功能
     async function selectFile(inputId) {

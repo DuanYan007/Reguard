@@ -244,25 +244,35 @@
                         <i class="fas fa-folder-open"></i>存储配置
                     </h3>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-8">
                             <label class="form-label">上传目录</label>
-                            <input type="text" class="form-control" id="storage_upload_folder"
-                                   value="${currentConfig.storage?.upload_folder || 'uploads'}">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="storage_upload_folder"
+                                       value="${currentConfig.storage?.upload_folder || 'uploads'}">
+                                <button class="btn btn-outline-secondary" type="button" onclick="selectFolder('storage_upload_folder')">
+                                    <i class="fas fa-folder-open"></i> 选择
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-8">
                             <label class="form-label">下载目录</label>
-                            <input type="text" class="form-control" id="storage_download_folder"
-                                   value="${currentConfig.storage?.download_folder || 'downloads'}">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="storage_download_folder"
+                                       value="${currentConfig.storage?.download_folder || 'downloads'}">
+                                <button class="btn btn-outline-secondary" type="button" onclick="selectFolder('storage_download_folder')">
+                                    <i class="fas fa-folder-open"></i> 选择
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-md-6 mt-3">
+                        <div class="col-md-8 mt-3">
                             <label class="form-label">历史记录文件</label>
-                            <input type="text" class="form-control" id="storage_history_file"
-                                   value="${currentConfig.storage?.history_file || 'history.json'}">
-                        </div>
-                        <div class="col-md-6 mt-3">
-                            <label class="form-label">批量状态文件</label>
-                            <input type="text" class="form-control" id="storage_batch_status_file"
-                                   value="${currentConfig.storage?.batch_status_file || 'batch_status.json'}">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="storage_history_file"
+                                       value="${currentConfig.storage?.history_file || 'history.json'}">
+                                <button class="btn btn-outline-secondary" type="button" onclick="selectFile('storage_history_file')">
+                                    <i class="fas fa-file"></i> 选择
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -283,92 +293,6 @@
                             <input type="number" class="form-control" id="limits_max_history_records"
                                    value="${currentConfig.limits?.max_history_records || 100}" min="1">
                         </div>
-                        <div class="col-md-6 mt-3">
-                            <label class="form-label">批量状态轮询间隔 (ms)</label>
-                            <input type="number" class="form-control" id="limits_batch_status_poll_interval"
-                                   value="${currentConfig.limits?.batch_status_poll_interval || 2000}" min="100">
-                        </div>
-                        <div class="col-md-6 mt-3">
-                            <label class="form-label">临时文件清理时间 (小时)</label>
-                            <input type="number" class="form-control" id="limits_cleanup_temp_files_hours"
-                                   value="${currentConfig.limits?.cleanup_temp_files_hours || 24}" min="1">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- UI配置 -->
-                <div class="section-card">
-                    <h3 class="section-title">
-                        <i class="fas fa-palette"></i>用户界面配置
-                    </h3>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">默认预览模式</label>
-                            <select class="form-select" id="ui_default_preview_mode">
-                                <option value="render" ${currentConfig.ui?.default_preview_mode === 'render' ? 'selected' : ''}>渲染模式</option>
-                                <option value="raw" ${currentConfig.ui?.default_preview_mode === 'raw' ? 'selected' : ''}>原始模式</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">通知持续时间 (ms)</label>
-                            <input type="number" class="form-control" id="ui_notification_duration"
-                                   value="${currentConfig.ui?.notification_duration || 5000}" min="1000">
-                        </div>
-                        <div class="col-md-12 mt-3">
-                            <label class="form-label">页面标题</label>
-                            <input type="text" class="form-control" id="ui_page_title"
-                                   value="${currentConfig.ui?.page_title || 'MarkItDown Web - 文档转换平台'}">
-                        </div>
-                        <div class="col-md-12 mt-3">
-                            <label class="form-label">主题</label>
-                            <select class="form-select" id="ui_theme">
-                                <option value="default" ${currentConfig.ui?.theme === 'default' ? 'selected' : ''}>默认主题</option>
-                                <option value="dark" ${currentConfig.ui?.theme === 'dark' ? 'selected' : ''}>深色主题</option>
-                                <option value="light" ${currentConfig.ui?.theme === 'light' ? 'selected' : ''}>浅色主题</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 功能开关 -->
-                <div class="section-card">
-                    <h3 class="section-title">
-                        <i class="fas fa-toggle-on"></i>功能开关
-                    </h3>
-                    <div class="feature-switch">
-                        <label class="form-label mb-0">批量转换功能</label>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="feature_enable_batch_conversion"
-                                   ${currentConfig.feature_flags?.enable_batch_conversion ? 'checked' : ''}>
-                        </div>
-                    </div>
-                    <div class="feature-switch">
-                        <label class="form-label mb-0">历史记录管理</label>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="feature_enable_history_management"
-                                   ${currentConfig.feature_flags?.enable_history_management ? 'checked' : ''}>
-                        </div>
-                    </div>
-                    <div class="feature-switch">
-                        <label class="form-label mb-0">文件预览功能</label>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="feature_enable_file_preview"
-                                   ${currentConfig.feature_flags?.enable_file_preview ? 'checked' : ''}>
-                        </div>
-                    </div>
-                    <div class="feature-switch">
-                        <label class="form-label mb-0">密码保护功能</label>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="feature_enable_password_protection"
-                                   ${currentConfig.feature_flags?.enable_password_protection ? 'checked' : ''}>
-                        </div>
-                    </div>
-                    <div class="feature-switch">
-                        <label class="form-label mb-0">自动清理临时文件</label>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="feature_auto_cleanup_temp_files"
-                                   ${currentConfig.feature_flags?.auto_cleanup_temp_files ? 'checked' : ''}>
-                        </div>
                     </div>
                 </div>
             `;
@@ -388,27 +312,11 @@
                     storage: {
                         upload_folder: document.getElementById('storage_upload_folder').value,
                         download_folder: document.getElementById('storage_download_folder').value,
-                        history_file: document.getElementById('storage_history_file').value,
-                        batch_status_file: document.getElementById('storage_batch_status_file').value
+                        history_file: document.getElementById('storage_history_file').value
                     },
                     limits: {
                         max_file_size: parseInt(document.getElementById('limits_max_file_size').value),
-                        max_history_records: parseInt(document.getElementById('limits_max_history_records').value),
-                        batch_status_poll_interval: parseInt(document.getElementById('limits_batch_status_poll_interval').value),
-                        cleanup_temp_files_hours: parseInt(document.getElementById('limits_cleanup_temp_files_hours').value)
-                    },
-                    ui: {
-                        default_preview_mode: document.getElementById('ui_default_preview_mode').value,
-                        notification_duration: parseInt(document.getElementById('ui_notification_duration').value),
-                        page_title: document.getElementById('ui_page_title').value,
-                        theme: document.getElementById('ui_theme').value
-                    },
-                    feature_flags: {
-                        enable_batch_conversion: document.getElementById('feature_enable_batch_conversion').checked,
-                        enable_history_management: document.getElementById('feature_enable_history_management').checked,
-                        enable_file_preview: document.getElementById('feature_enable_file_preview').checked,
-                        enable_password_protection: document.getElementById('feature_enable_password_protection').checked,
-                        auto_cleanup_temp_files: document.getElementById('feature_auto_cleanup_temp_files').checked
+                        max_history_records: parseInt(document.getElementById('limits_max_history_records').value)
                     }
                 };
 
@@ -520,6 +428,63 @@
                 }
             }, 5000);
         }
+
+        // 文件夹选择功能
+      async function selectFolder(inputId) {
+        try {
+            // 创建隐藏的input元素
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.webkitdirectory = true;
+            input.style.display = 'none';
+
+            input.onchange = function(e) {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                    // 获取文件夹路径（取第一个文件的父目录）
+                    const filePath = files[0].webkitRelativePath;
+                    const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
+                    document.getElementById(inputId).value = folderPath || files[0].name.split('/')[0];
+                }
+                document.body.removeChild(input);
+            };
+
+            document.body.appendChild(input);
+            input.click();
+        } catch (error) {
+            // 如果不支持文件夹选择，使用传统方式
+            const path = prompt('请输入文件夹路径:', document.getElementById(inputId).value);
+            if (path) {
+                document.getElementById(inputId).value = path;
+            }
+        }
+    }
+
+    // 文件选择功能
+    async function selectFile(inputId) {
+        try {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.style.display = 'none';
+
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    document.getElementById(inputId).value = file.name;
+                }
+                document.body.removeChild(input);
+            };
+
+            document.body.appendChild(input);
+            input.click();
+        } catch (error) {
+            // 如果不支持文件选择，使用传统方式
+            const path = prompt('请输入文件路径:', document.getElementById(inputId).value);
+            if (path) {
+                document.getElementById(inputId).value = path;
+            }
+        }
+    }
 
         // 监听页面离开事件
         window.addEventListener('beforeunload', (e) => {
