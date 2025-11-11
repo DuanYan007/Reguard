@@ -13,7 +13,6 @@ from converters.ppt_native_converter import ppt_native_converter
 from converters.audio_converter import audio_converter
 from converters.video_converter import video_converter
 from config_manager import config_manager, get_config, set_config
-from file_migrator import file_migrator, FileMigrationResult
 # 修改为内联的解压功能，避免rarfile依赖
 def extract_archive_safe(archive_path, password=None):
     """安全的ZIP文件提取，不依赖外部工具"""
@@ -184,16 +183,12 @@ app = Flask(__name__)
 # 设置应用配置
 logger = setup_app()
 
-# 配置文件路径 - 使用函数动态获取
-def get_history_file():
-    """动态获取历史文件路径"""
-    return get_config('storage.history_file', 'history.json')
-
+# 配置文件路径
+HISTORY_FILE = get_config('storage.history_file', 'history.json')
 BATCH_STATUS_FILE = 'batch_status.json'  # 固定值，简化配置
 
 def on_config_change(old_config, new_config):
     """配置变化回调函数"""
-    global HISTORY_FILE
     logger.info("检测到配置变化，更新应用配置...")
 
     # 更新Flask配置
@@ -218,17 +213,10 @@ def on_config_change(old_config, new_config):
     app.config['UPLOAD_FOLDER'] = upload_folder
     app.config['DOWNLOAD_FOLDER'] = download_folder
 
-    # 更新历史文件路径
-    HISTORY_FILE = get_history_file()
-    logger.info(f"历史文件路径已更新为: {HISTORY_FILE}")
-
     logger.info(f"应用配置已更新 - 上传目录: {upload_folder}, 下载目录: {download_folder}")
 
 # 注册配置变化回调
 config_manager.add_callback(on_config_change)
-
-# 初始化HISTORY_FILE
-HISTORY_FILE = get_history_file()
 
 # 全局批量转换状态
 batch_conversion_status = {}
@@ -765,7 +753,7 @@ def get_config_api():
 
 @app.route('/api/config', methods=['PUT'])
 def update_config_api():
-    """更新配置（支持文件迁移）"""
+    """更新配置"""
     try:
         data = request.get_json()
         if not data:
@@ -781,66 +769,15 @@ def update_config_api():
                 'message': '配置数据格式错误'
             }), 400
 
-        # 获取当前配置用于迁移
-        current_config = config_manager.get_all()
-
-        # 验证迁移路径的合法性
-        is_valid, validation_message = file_migrator.validate_migration_paths(current_config, data)
-        if not is_valid:
-            return jsonify({
-                'success': False,
-                'message': f'路径验证失败: {validation_message}'
-            }), 400
-
-        # 检查是否需要文件迁移
-        requires_migration = (
-            current_config.get('storage', {}).get('upload_folder') != data.get('storage', {}).get('upload_folder') or
-            current_config.get('storage', {}).get('download_folder') != data.get('storage', {}).get('download_folder') or
-            current_config.get('storage', {}).get('history_file') != data.get('storage', {}).get('history_file')
-        )
-
-        if requires_migration:
-            # 执行文件迁移
-            logger.info("开始文件迁移...")
-            migration_result = file_migrator.migrate_storage_directories(current_config, data)
-
-            if not migration_result.success:
-                return jsonify({
-                    'success': False,
-                    'message': f'文件迁移失败: {migration_result.message}',
-                    'requires_migration': True
-                }), 400
-
-            # 迁移成功，记录迁移信息
-            logger.info(f"文件迁移成功，迁移了 {len(migration_result.migrated_files)} 个文件")
-
         # 更新配置
         success = config_manager.update(data)
         if success:
             logger.info("配置已通过API更新")
-            response_data = {
+            return jsonify({
                 'success': True,
-                'message': '配置更新成功',
-                'requires_migration': requires_migration
-            }
-
-            if requires_migration:
-                response_data.update({
-                    'migrated_files_count': len(migration_result.migrated_files),
-                    'migration_details': {
-                        'old_paths': current_config.get('storage', {}),
-                        'new_paths': data.get('storage', {}),
-                        'migrated_files': migration_result.migrated_files[:10]  # 只返回前10个文件示例
-                    }
-                })
-
-            return jsonify(response_data)
+                'message': '配置更新成功'
+            })
         else:
-            # 如果配置更新失败但迁移成功了，需要回滚迁移
-            if requires_migration and migration_result.success:
-                logger.error("配置更新失败，尝试回滚文件迁移...")
-                # 这里可以添加回滚逻辑，但当前版本的文件迁移器已经内置了回滚机制
-
             return jsonify({
                 'success': False,
                 'message': '配置更新失败'

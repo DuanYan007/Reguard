@@ -1,5 +1,35 @@
+# Web 框架
 Flask==2.3.3
 Werkzeug==2.3.7
-pandas==2.1.3
+
+# OCR 和文档处理
+opencv-python==4.8.1.78
+Pillow==10.0.1
+
+# Office 文档处理
+python-docx==0.8.11
+python-pptx==0.6.21
 openpyxl==3.1.2
+pandas==2.1.3
+
+# 数据处理
 tabulate==0.9.0
+numpy==1.24.3
+
+# 媒体文件处理
+mutagen==1.47.0
+ffmpeg-python==0.2.0
+
+# PDF 处理（原生解析备用）
+pdfplumber==0.9.0
+
+# HTML 解析
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
+# 系统工具
+psutil==5.9.6
+
+# 可选：GPU 加速版本的 PaddlePaddle（需要 CUDA）
+# paddlepaddle-gpu==2.5.2  # CUDA 11.8
+# paddlepaddle-gpu==2.6.0  # CUDA 12.0

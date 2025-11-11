@@ -1,0 +1,16 @@
+{
+  "app": {
+    "host": "0.0.0.0",
+    "port": 5000,
+    "debug": true
+  },
+  "storage": {
+    "upload_folder": "uploads",
+    "download_folder": "downloads",
+    "history_file": "history.json"
+  },
+  "limits": {
+    "max_file_size": 104857600,
+    "max_history_records": 100
+  }
+}
