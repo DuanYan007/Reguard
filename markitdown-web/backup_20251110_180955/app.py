@@ -5,14 +5,12 @@ import json
 import datetime
 import threading
 import time
-import logging
 from converters import csv_converter, pdf_converter, img_converter
 from converters.word_converter import word_converter
 from converters.pdf_native_converter import pdf_native_converter
 from converters.ppt_native_converter import ppt_native_converter
 from converters.audio_converter import audio_converter
 from converters.video_converter import video_converter
-from config_manager import config_manager, get_config, set_config
 # 修改为内联的解压功能，避免rarfile依赖
 def extract_archive_safe(archive_path, password=None):
     """安全的ZIP文件提取，不依赖外部工具"""
@@ -120,103 +118,21 @@ class SimpleArchiveExtractor:
 # 替换原来的archive_extractor
 archive_extractor = SimpleArchiveExtractor()
 
-def setup_logging():
-    """设置日志配置"""
-    # 简化日志配置 - 使用默认值
-    log_level = 'INFO'
-    log_file = 'markitdown.log'
-
-    # 确保日志目录存在
-    log_dir = os.path.dirname(log_file) if os.path.dirname(log_file) else '.'
-    os.makedirs(log_dir, exist_ok=True)
-
-    logging.basicConfig(
-        level=getattr(logging, log_level.upper()),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file, encoding='utf-8'),
-            logging.StreamHandler()  # 同时输出到控制台
-        ]
-    )
-
-def setup_app():
-    """设置应用配置"""
-    # 获取Flask配置
-    flask_config = config_manager.get_flask_config()
-
-    # 配置Flask应用
-    app.config.update(flask_config)
-
-    # 获取存储路径配置
-    upload_folder = get_config('storage.upload_folder')
-    download_folder = get_config('storage.download_folder')
-
-    # 处理绝对路径：如果路径不是绝对路径，则相对于当前工作目录
-    if not os.path.isabs(upload_folder):
-        upload_folder = os.path.abspath(upload_folder)
-    if not os.path.isabs(download_folder):
-        download_folder = os.path.abspath(download_folder)
-
-    # 确保必要的目录存在
-    os.makedirs(upload_folder, exist_ok=True)
-    os.makedirs(download_folder, exist_ok=True)
-
-    # 更新应用配置中的绝对路径
-    app.config['UPLOAD_FOLDER'] = upload_folder
-    app.config['DOWNLOAD_FOLDER'] = download_folder
-
-    # 设置日志
-    setup_logging()
-
-    logger = logging.getLogger(__name__)
-    logger.info("MarkItDown Web 应用启动完成")
-    logger.info(f"上传目录: {upload_folder}")
-    logger.info(f"下载目录: {download_folder}")
-    max_file_size = get_config('limits.max_file_size', 104857600)
-    max_file_size_mb = max_file_size / (1024 * 1024)
-    logger.info(f"最大文件大小: {max_file_size_mb:.1f}MB")
-
-    return logger
-
 app = Flask(__name__)
 
-# 设置应用配置
-logger = setup_app()
+# 配置
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['DOWNLOAD_FOLDER'] = 'downloads'
+app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 
-# 配置文件路径
-HISTORY_FILE = get_config('storage.history_file', 'history.json')
-BATCH_STATUS_FILE = 'batch_status.json'  # 固定值，简化配置
+# 确保必要的目录存在
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
 
-def on_config_change(old_config, new_config):
-    """配置变化回调函数"""
-    logger.info("检测到配置变化，更新应用配置...")
-
-    # 更新Flask配置
-    flask_config = config_manager.get_flask_config()
-    app.config.update(flask_config)
-
-    # 获取存储路径配置并处理绝对路径
-    upload_folder = get_config('storage.upload_folder')
-    download_folder = get_config('storage.download_folder')
-
-    # 处理绝对路径：如果路径不是绝对路径，则相对于当前工作目录
-    if not os.path.isabs(upload_folder):
-        upload_folder = os.path.abspath(upload_folder)
-    if not os.path.isabs(download_folder):
-        download_folder = os.path.abspath(download_folder)
-
-    # 确保目录存在（如果路径发生变化）
-    os.makedirs(upload_folder, exist_ok=True)
-    os.makedirs(download_folder, exist_ok=True)
-
-    # 更新应用配置中的绝对路径
-    app.config['UPLOAD_FOLDER'] = upload_folder
-    app.config['DOWNLOAD_FOLDER'] = download_folder
-
-    logger.info(f"应用配置已更新 - 上传目录: {upload_folder}, 下载目录: {download_folder}")
-
-# 注册配置变化回调
-config_manager.add_callback(on_config_change)
+# 历史记录存储
+HISTORY_FILE = 'history.json'
+BATCH_STATUS_FILE = 'batch_status.json'
 
 # 全局批量转换状态
 batch_conversion_status = {}
@@ -255,10 +171,9 @@ def add_to_history(original_name, file_format, file_size, md_file_path, download
     }
     history.insert(0, record)  # 添加到开头
 
-    # 只保留配置中指定数量的记录
-    max_records = get_config('limits.max_history_records')
-    if len(history) > max_records:
-        history = history[:max_records]
+    # 只保留最近100条记录
+    if len(history) > 100:
+        history = history[:100]
 
     save_history(history)
     return record
@@ -280,24 +195,22 @@ def get_batch_status(batch_id):
     with batch_lock:
         return batch_conversion_status.get(batch_id, {})
 
-# 从配置获取支持的文件类型
-def get_supported_formats():
-    """获取支持的文件格式 - 简化版本使用硬编码格式"""
-    return {
-        "pdf": ".pdf",
-        "word": ".doc,.docx",
-        "excel": ".xls,.xlsx",
-        "ppt": ".ppt,.pptx",
-        "image": ".jpg,.jpeg,.png,.gif,.bmp",
-        "audio": ".mp3,.wav,.flac,.aac,.ogg,.m4a,.wma",
-        "video": ".mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v,.3gp,.mpg,.mpeg",
-        "html": ".html,.htm",
-        "csv": ".csv",
-        "json": ".json",
-        "xml": ".xml",
-        "zip": ".zip",
-        "rar": ".rar"
-    }
+# 支持的文件类型
+SUPPORTED_FORMATS = {
+    'pdf': '.pdf',
+    'word': '.doc,.docx',
+    'excel': '.xls,.xlsx',
+    'ppt': '.ppt,.pptx',
+    'image': '.jpg,.jpeg,.png,.gif,.bmp',
+    'audio': '.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma',
+    'video': '.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v,.3gp,.mpg,.mpeg',
+    'html': '.html,.htm',
+    'csv': '.csv',
+    'json': '.json',
+    'xml': '.xml',
+    'zip': '.zip',
+    'rar': '.rar'
+}
 
 
 @app.route('/')
@@ -305,114 +218,21 @@ def index():
     """主页"""
     return render_template('index.html')
 
-@app.route('/config')
-def config_page():
-    """配置管理页面"""
-    return render_template('config.html')
-
 @app.route('/test_batch')
 def test_batch():
     """批量转换测试页面"""
     return send_file('test_batch.html')
 
 @app.route("/imgs/<img_file>", methods=['GET'])
-def serve_imgs_image(img_file):
-    """服务imgs目录中的图片文件"""
-    try:
-        # 检查多个可能的imgs目录位置
-        possible_paths = [
-            os.path.join('./imgs', img_file),  # 相对于当前工作目录
-            os.path.join(app.config['DOWNLOAD_FOLDER'], 'imgs', img_file),  # 下载目录下的imgs
-            os.path.join(app.config['UPLOAD_FOLDER'], 'imgs', img_file),  # 上传目录下的imgs
-        ]
-
-        # 如果配置了绝对路径的imgs目录，也检查那里
-        if 'IMGS_FOLDER' in app.config:
-            possible_paths.append(os.path.join(app.config['IMGS_FOLDER'], img_file))
-
-        for path in possible_paths:
-            if os.path.exists(path):
-                return send_file(path)
-
-        abort(404)
-    except Exception as e:
-        print(f"[错误] 服务imgs图片失败: {str(e)}")
-        abort(404)
-
-@app.route("/downloads/images/<img_file>", methods=['GET'])
-def serve_download_image(img_file):
-    """服务downloads目录中的图片文件"""
-    try:
-        image_path = os.path.join(app.config['DOWNLOAD_FOLDER'], 'images', img_file)
-        if os.path.exists(image_path):
-            return send_file(image_path)
-        else:
-            abort(404)
-    except Exception as e:
-        print(f"[错误] 服务图片失败: {str(e)}")
-        abort(404)
-
-@app.route("/downloads/<folder>/<img_file>", methods=['GET'])
-def serve_folder_image(folder, img_file):
-    """服务downloads子目录中的图片文件"""
-    try:
-        image_path = os.path.join(app.config['DOWNLOAD_FOLDER'], folder, img_file)
-        if os.path.exists(image_path):
-            return send_file(image_path)
-        else:
-            abort(404)
-    except Exception as e:
-        print(f"[错误] 服务图片失败: {str(e)}")
-        abort(404)
-
-@app.route("/downloads/<path:subpath>", methods=['GET'])
-def serve_downloads_file(subpath):
-    """服务downloads目录下的任何文件（包括图片）"""
-    try:
-        file_path = os.path.join(app.config['DOWNLOAD_FOLDER'], subpath)
-        if os.path.exists(file_path) and os.path.isfile(file_path):
-            return send_file(file_path)
-        else:
-            abort(404)
-    except Exception as e:
-        print(f"[错误] 服务downloads文件失败: {str(e)}")
-        abort(404)
-
-@app.route("/<path:subpath>", methods=['GET'])
-def serve_any_file(subpath):
-    """服务任何位置的文件（处理根目录下的文件路径）"""
-    try:
-        # 安全检查：只允许图片文件和特定目录
-        if not any(subpath.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']):
-            abort(404)
-
-        # 构建可能的文件路径
-        possible_paths = [
-            subpath,  # 直接路径
-            os.path.join(app.config['DOWNLOAD_FOLDER'], subpath),  # 下载目录下
-            os.path.join(app.config['UPLOAD_FOLDER'], subpath),   # 上传目录下
-        ]
-
-        # 如果是imgs开头的路径，也检查当前工作目录
-        if subpath.startswith('imgs/'):
-            possible_paths.append(subpath)
-
-        for file_path in possible_paths:
-            if os.path.exists(file_path) and os.path.isfile(file_path):
-                return send_file(file_path)
-
-        abort(404)
-    except Exception as e:
-        print(f"[错误] 服务文件失败: {str(e)}")
-        abort(404)
+def image(img_file):
+    return redirect(f"./imgs/{img_file}")
 
 
 @app.route('/upload/<format_type>', methods=['POST'])
 def upload_file(format_type):
     """上传文件接口"""
     try:
-        supported_formats = get_supported_formats()
-        if format_type not in supported_formats:
+        if format_type not in SUPPORTED_FORMATS:
             return jsonify({
                 'success': False,
                 'message': f'不支持的格式: {format_type}'
@@ -470,8 +290,7 @@ WORD:
 def convert_format(format_type):
     """格式特定的转换接口"""
     try:
-        supported_formats = get_supported_formats()
-        if format_type not in supported_formats:
+        if format_type not in SUPPORTED_FORMATS:
             return jsonify({
                 'success': False,
                 'message': f'不支持的格式: {format_type}'
@@ -564,42 +383,27 @@ def convert_format(format_type):
     output_filename = f"{os.path.splitext(filename)[0]}_{uuid.uuid4().hex[:8]}.md"
     output_path = os.path.join(app.config['DOWNLOAD_FOLDER'], output_filename)
 
-    # 只保存一个markdown文件（包含相对路径）
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(content)
-
     # 删除临时上传文件
     os.remove(upload_path)
 
-    # 添加到历史记录（默认启用）
-    history_record = None
-    history_id = None
-    if True:  # 简化配置，默认启用历史记录
-        # 从upload_path中提取原始文件名（去除UUID前缀）
-        # upload_path格式: uuid_filename，我们需要去掉uuid前缀
-        basename = os.path.basename(upload_path)
-        # 找到第一个下划线的位置（UUID和文件名的分隔符）
-        underscore_pos = basename.find('_')
-        if underscore_pos != -1:
-            # 跳过UUID前缀，找到原始文件名
-            original_filename = basename[underscore_pos + 1:]
-        else:
-            original_filename = basename
-        download_url = f"/download-md?file_path={output_path}&filename={os.path.basename(output_filename)}"
-        history_record = add_to_history(
-            original_name=original_filename,
-            file_format=format_type,
-            file_size=os.path.getsize(output_path) if os.path.exists(output_path) else 0,
-            md_file_path=output_path,
-            download_url=download_url
-        )
-        history_id = history_record['id']
+    # 添加到历史记录
+    original_filename = os.path.basename(upload_path)
+    download_url = f"/download-md?file_path={output_path}&filename={os.path.basename(output_filename)}"
+    history_record = add_to_history(
+        original_name=original_filename,
+        file_format=format_type,
+        file_size=os.path.getsize(output_path) if os.path.exists(output_path) else 0,
+        md_file_path=output_path,
+        download_url=download_url
+    )
 
     return jsonify({
         'success': True,
         'md_file_path': output_path,
         'message': f'成功转换 {filename}',
-        'history_id': history_id
+        'history_id': history_record['id']
     })
 
 
@@ -631,7 +435,6 @@ def download_md():
         if not file_path or not os.path.exists(file_path):
             abort(404)
 
-        # 直接返回原始文件（已经包含绝对路径）
         return send_file(file_path, as_attachment=True, download_name=filename)
     except Exception as e:
         abort(500)
@@ -640,15 +443,12 @@ def download_md():
 
 
 @app.route('/api/formats')
-def get_file_formats():
+def get_supported_formats():
     """获取支持的文件格式"""
-    supported_formats = get_supported_formats()
-    max_file_size = get_config('limits.max_file_size', 104857600)
-    max_file_size_mb = max_file_size / (1024 * 1024)
     return jsonify({
-        'supported_formats': supported_formats,
-        'max_file_size': f"{max_file_size_mb:.1f}MB",
-        'supported_types': list(supported_formats.keys())
+        'supported_formats': SUPPORTED_FORMATS,
+        'max_file_size': '100MB',
+        'supported_types': list(SUPPORTED_FORMATS.keys())
     })
 
 
@@ -666,7 +466,6 @@ def read_md_file():
             }), 400
 
         file_path = data['file_path']
-        use_absolute = data.get('use_absolute_paths', False)  # 默认为False（网页预览）
 
         # 验证文件是否存在
         if not os.path.exists(file_path):
@@ -675,23 +474,31 @@ def read_md_file():
                 'message': f'文件不存在: {file_path}'
             }), 400
 
-        # 读取文件内容（原始文件包含绝对路径）
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
+        # 读取文件内容
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            # 尝试其他编码
+            encodings = ['gbk', 'gb2312', 'utf-8-sig', 'latin1']
+            content = None
+            for encoding in encodings:
+                try:
+                    with open(file_path, 'r', encoding=encoding) as f:
+                        content = f.read()
+                    break
+                except UnicodeDecodeError:
+                    continue
 
-        # 根据参数决定是否转换路径
-        if use_absolute:
-            # 原始Markdown展示 - 返回绝对路径
-            final_content = content
-            print(f"[信息] 返回原始Markdown内容（绝对路径）")
-        else:
-            # 网页预览 - 转换为相对路径
-            final_content = process_images_to_relative_paths_for_web(content)
-            print(f"[信息] 返回网页预览内容（相对路径）")
+            if content is None:
+                return jsonify({
+                    'success': False,
+                    'message': '无法读取文件编码'
+                }), 400
 
         return jsonify({
             'success': True,
-            'content': final_content
+            'content': content
         })
 
     except Exception as e:
@@ -705,7 +512,6 @@ def read_md_file():
 def get_history():
     """获取转换历史记录"""
     try:
-        # 简化配置，默认启用历史记录
         history = load_history()
         return jsonify({
             'success': True,
@@ -723,7 +529,6 @@ def get_history():
 def clear_history():
     """清空历史记录"""
     try:
-        # 简化配置，默认启用历史记录
         save_history([])
         return jsonify({
             'success': True,
@@ -736,89 +541,10 @@ def clear_history():
         }), 500
 
 
-@app.route('/api/config', methods=['GET'])
-def get_config_api():
-    """获取当前配置"""
-    try:
-        config_data = config_manager.get_all()
-        return jsonify({
-            'success': True,
-            'config': config_data
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'获取配置失败: {str(e)}'
-        }), 500
-
-@app.route('/api/config', methods=['PUT'])
-def update_config_api():
-    """更新配置"""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({
-                'success': False,
-                'message': '没有提供配置数据'
-            }), 400
-
-        # 验证配置数据
-        if not isinstance(data, dict):
-            return jsonify({
-                'success': False,
-                'message': '配置数据格式错误'
-            }), 400
-
-        # 更新配置
-        success = config_manager.update(data)
-        if success:
-            logger.info("配置已通过API更新")
-            return jsonify({
-                'success': True,
-                'message': '配置更新成功'
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'message': '配置更新失败'
-            }), 500
-
-    except Exception as e:
-        logger.error(f"API更新配置失败: {e}")
-        return jsonify({
-            'success': False,
-            'message': f'配置更新失败: {str(e)}'
-        }), 500
-
-@app.route('/api/config/reload', methods=['POST'])
-def reload_config_api():
-    """重新加载配置"""
-    try:
-        success = config_manager.reload()
-        if success:
-            logger.info("配置已通过API重新加载")
-            return jsonify({
-                'success': True,
-                'message': '配置重新加载成功'
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'message': '配置重新加载失败'
-            }), 500
-
-    except Exception as e:
-        logger.error(f"API重新加载配置失败: {e}")
-        return jsonify({
-            'success': False,
-            'message': f'配置重新加载失败: {str(e)}'
-        }), 500
-
 @app.route('/api/history/<history_id>', methods=['DELETE'])
 def delete_history_item(history_id):
     """删除单条历史记录"""
     try:
-        # 简化配置，默认启用历史记录
         history = load_history()
         new_history = [item for item in history if item['id'] != history_id]
 
@@ -1087,8 +813,7 @@ def convert_batch_files(batch_id, files):
 
             print(f"[批量转换] 开始转换文件: {filename} (格式: {file_format}, 路径: {file_path})")
 
-            supported_formats = get_supported_formats()
-            if file_format not in supported_formats:
+            if file_format not in SUPPORTED_FORMATS:
                 print(f"[批量转换] ❌ 不支持的文件格式: {file_format}")
                 # 更新文件状态为失败
                 global_file['conversion_status'] = 'failed'
@@ -1102,7 +827,7 @@ def convert_batch_files(batch_id, files):
             content = convert_file_content(file_path, file_format)
             print(f"[批量转换] 转换完成，内容长度: {len(content)} 字符")
 
-            # 保存转换后的文件（只保存一个包含相对路径的文件）
+            # 保存转换后的文件
             output_filename = f"{os.path.splitext(filename)[0]}_{uuid.uuid4().hex[:8]}.md"
             output_path = os.path.join(app.config['DOWNLOAD_FOLDER'], output_filename)
 
@@ -1122,18 +847,15 @@ def convert_batch_files(batch_id, files):
             global_file['converted_at'] = datetime.datetime.now().isoformat()
             print(f"[批量转换] ✅ 文件转换完成: {filename}")
 
-            # 添加到历史记录（默认启用）
-            if True:  # 简化配置，默认启用历史记录
-                print(f"[批量转换] 添加到历史记录...")
-                add_to_history(
-                    original_name=filename,
-                    file_format=file_format,
-                    file_size=os.path.getsize(output_path),
-                    md_file_path=output_path,
-                    download_url=download_url
-                )
-            else:
-                print(f"[批量转换] 历史记录功能已禁用，跳过历史记录")
+            # 添加到历史记录
+            print(f"[批量转换] 添加到历史记录...")
+            add_to_history(
+                original_name=filename,
+                file_format=file_format,
+                file_size=os.path.getsize(output_path),
+                md_file_path=output_path,
+                download_url=download_url
+            )
 
             # 更新整体进度
             batch_status['conversion_progress']['completed'] += 1
@@ -1268,8 +990,7 @@ def detect_file_format(filename):
 
     ext = '.' + filename.split('.')[-1].lower() if '.' in filename else ''
 
-    supported_formats = get_supported_formats()
-    for format_type, extensions in supported_formats.items():
+    for format_type, extensions in SUPPORTED_FORMATS.items():
         if ext in extensions.split(','):
             return format_type
 
@@ -1278,67 +999,11 @@ def detect_file_format(filename):
 
 def is_supported_file(filename, format_type):
     """检查文件是否支持该格式"""
-    supported_formats = get_supported_formats()
-    if format_type not in supported_formats:
+    if format_type not in SUPPORTED_FORMATS:
         return False
 
     ext = '.' + filename.split('.')[-1].lower() if '.' in filename else ''
-    return ext in supported_formats[format_type].split(',')
-
-
-def process_images_to_absolute_paths_for_download(markdown_path, base_name):
-    """为下载版本处理图片路径为绝对路径（已弃用 - 现在原始文件直接包含绝对路径）"""
-    # 直接返回原始内容，因为现在原始文件已经包含绝对路径
-    try:
-        with open(markdown_path, 'r', encoding='utf-8') as f:
-            return f.read()
-    except Exception as e:
-        print(f"[警告] 读取文件失败: {str(e)}")
-        return ""
-
-def process_images_to_relative_paths_for_web(content):
-    """为网页渲染将绝对路径转换为相对路径"""
-    try:
-        import re
-
-        # 获取当前工作目录
-        current_dir = os.getcwd()
-
-        # 处理HTML img标签中的绝对路径
-        # 匹配 <img src="O:/Project/.../imgs/xxx.jpg"> 格式
-        img_pattern = r'<img\s+src="([^"]*imgs/[^"]+)"'
-
-        def replace_img_src(match):
-            abs_path = match.group(1)
-            # 提取imgs/xxx.jpg部分
-            if 'imgs/' in abs_path:
-                rel_path = abs_path.split('imgs/')[-1]
-                return f'<img src="imgs/{rel_path}"'
-            return match.group(0)
-
-        content = re.sub(img_pattern, replace_img_src, content)
-
-        # 处理markdown格式的图片路径 ![alt](O:/Project/.../imgs/xxx.jpg)
-        md_img_pattern = r'!\[(.*?)\]\(([^)]*imgs/[^)]+)\)'
-
-        def replace_md_img(match):
-            alt_text = match.group(1)
-            abs_path = match.group(2)
-            # 提取imgs/xxx.jpg部分
-            if 'imgs/' in abs_path:
-                rel_path = abs_path.split('imgs/')[-1]
-                return f'![{alt_text}](imgs/{rel_path})'
-            return match.group(0)
-
-        content = re.sub(md_img_pattern, replace_md_img, content)
-
-        print(f"[信息] 已将绝对路径转换为相对路径用于网页渲染")
-        return content
-
-    except Exception as e:
-        print(f"[警告] 处理网页渲染路径转换时出错: {str(e)}")
-        return content
-
+    return ext in SUPPORTED_FORMATS[format_type].split(',')
 
 
 @app.errorhandler(404)
@@ -1357,19 +1022,5 @@ def internal_error(error):
 
 
 if __name__ == '__main__':
-    # 从配置获取运行参数
-    host = get_config('app.host', '0.0.0.0')
-    port = get_config('app.port', 5000)
-    debug = get_config('app.debug', True)
-
-    logger.info(f"启动应用 - Host: {host}, Port: {port}, Debug: {debug}")
-
-    try:
-        app.run(debug=debug, host=host, port=port)
-    except KeyboardInterrupt:
-        logger.info("应用已停止")
-    except Exception as e:
-        logger.error(f"应用启动失败: {e}")
-    finally:
-        # 停止配置监控
-        config_manager.stop_watching()
+    # 开发环境配置
+    app.run(debug=True, host='0.0.0.0', port=5000)

@@ -1,4 +1,4 @@
-// 增强版文件转换器JavaScript - 支持动态配置和热重载
+// 简化版文件转换器JavaScript - 移除批量处理功能
 class FileConverter {
     constructor() {
         this.currentFormat = null;
@@ -19,10 +19,6 @@ class FileConverter {
         // 预览状态管理 - 记录预览前的页面上下文
         this.previewSource = null; // 'single' | 'batch' | 'history'
 
-        // 配置管理
-        this.appConfig = {};
-        this.configWatchInterval = null;
-
         this.init();
     }
 
@@ -30,154 +26,8 @@ class FileConverter {
         console.log('FileConverter.init() 开始');
         this.setupEventListeners();
         console.log('事件监听器设置完成');
-        this.loadAppConfig().then(() => {
-            this.startConfigWatching();
-            this.showWelcome();
-            console.log('FileConverter.init() 完成');
-        });
-    }
-
-    // 配置管理方法
-    async loadAppConfig() {
-        try {
-            const response = await fetch('/api/config');
-            const result = await response.json();
-
-            if (result.success) {
-                this.appConfig = result.config;
-                console.log('应用配置加载成功:', this.appConfig);
-                this.applyConfig();
-                return true;
-            } else {
-                console.error('加载应用配置失败:', result.message);
-                return false;
-            }
-        } catch (error) {
-            console.error('加载应用配置异常:', error);
-            return false;
-        }
-    }
-
-    async updateAppConfig(configUpdates) {
-        try {
-            const response = await fetch('/api/config', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(configUpdates)
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                console.log('应用配置更新成功');
-                await this.loadAppConfig(); // 重新加载配置
-                this.showNotification('配置更新成功', 'success');
-                return true;
-            } else {
-                console.error('更新应用配置失败:', result.message);
-                this.showNotification('配置更新失败: ' + result.message, 'error');
-                return false;
-            }
-        } catch (error) {
-            console.error('更新应用配置异常:', error);
-            this.showNotification('配置更新异常: ' + error.message, 'error');
-            return false;
-        }
-    }
-
-    async reloadAppConfig() {
-        try {
-            const response = await fetch('/api/config/reload', {
-                method: 'POST'
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                console.log('应用配置重新加载成功');
-                await this.loadAppConfig();
-                this.showNotification('配置重新加载成功', 'success');
-                return true;
-            } else {
-                console.error('重新加载应用配置失败:', result.message);
-                this.showNotification('配置重新加载失败: ' + result.message, 'error');
-                return false;
-            }
-        } catch (error) {
-            console.error('重新加载应用配置异常:', error);
-            this.showNotification('配置重新加载异常: ' + error.message, 'error');
-            return false;
-        }
-    }
-
-    applyConfig() {
-        // 简化配置应用 - 由于配置已简化，大部分功能使用默认值
-
-        // 设置通知持续时间（使用默认值）
-        this.notificationDuration = 5000; // 5秒默认值
-
-        // 所有功能默认启用，无需检查feature_flags
-
-        console.log('配置应用完成（使用简化配置）');
-    }
-
-    toggleFeatures(features) {
-        // 简化版功能切换 - 所有功能默认启用，无需配置
-        // 由于简化配置，所有功能都保持启用状态
-        console.log('功能切换已简化，所有功能默认启用');
-    }
-
-    startConfigWatching() {
-        // 每30秒检查一次配置变化
-        this.configWatchInterval = setInterval(() => {
-            this.checkConfigChanges();
-        }, 30000);
-    }
-
-    stopConfigWatching() {
-        if (this.configWatchInterval) {
-            clearInterval(this.configWatchInterval);
-            this.configWatchInterval = null;
-        }
-    }
-
-    async checkConfigChanges() {
-        try {
-            const response = await fetch('/api/config');
-            const result = await response.json();
-
-            if (result.success) {
-                const newConfig = result.config;
-
-                // 简单的变化检测（比较JSON字符串）
-                if (JSON.stringify(newConfig) !== JSON.stringify(this.appConfig)) {
-                    console.log('检测到配置变化，重新加载...');
-                    this.appConfig = newConfig;
-                    this.applyConfig();
-                    this.showNotification('配置已自动更新', 'info');
-                }
-            }
-        } catch (error) {
-            console.error('检查配置变化失败:', error);
-        }
-    }
-
-    getConfig(path, defaultValue = null) {
-        // 获取嵌套配置值，例如 getConfig('ui.page_title')
-        const keys = path.split('.');
-        let value = this.appConfig;
-
-        for (const key of keys) {
-            if (value && typeof value === 'object' && key in value) {
-                value = value[key];
-            } else {
-                return defaultValue;
-            }
-        }
-
-        return value !== undefined ? value : defaultValue;
+        this.showWelcome();
+        console.log('FileConverter.init() 完成');
     }
 
     setupEventListeners() {
@@ -871,53 +721,6 @@ class FileConverter {
 
         // 重新渲染预览
         if (this.currentPreviewData) {
-            if (mode === 'raw') {
-                // 原始Markdown模式 - 获取绝对路径版本
-                this.loadAbsoluteContent();
-            } else {
-                // 渲染预览模式 - 使用现有的相对路径内容
-                this.renderPreview(this.currentPreviewData.content);
-            }
-        }
-    }
-
-    async loadAbsoluteContent() {
-        if (!this.currentPreviewData || !this.currentPreviewData.mdFilePath) {
-            console.error('缺少文件路径信息');
-            return;
-        }
-
-        try {
-            console.log('获取原始Markdown内容（绝对路径）...');
-            const response = await fetch('/read-md-file', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    file_path: this.currentPreviewData.mdFilePath,
-                    use_absolute_paths: true  // 请求绝对路径版本
-                })
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    console.log('成功获取绝对路径内容');
-                    this.renderPreview(result.content);
-                } else {
-                    console.error('获取绝对路径内容失败:', result.message);
-                    // 降级到现有内容
-                    this.renderPreview(this.currentPreviewData.content);
-                }
-            } else {
-                console.error('请求绝对路径内容失败:', response.status);
-                // 降级到现有内容
-                this.renderPreview(this.currentPreviewData.content);
-            }
-        } catch (error) {
-            console.error('加载绝对路径内容异常:', error);
-            // 降级到现有内容
             this.renderPreview(this.currentPreviewData.content);
         }
     }
@@ -977,24 +780,9 @@ class FileConverter {
     // 下载和复制方法
     downloadCurrent() {
         if (this.currentPreviewData && this.currentPreviewData.mdFilePath) {
+            // 通过后端下载接口下载文件
             const filename = this.currentPreviewData.originalName.replace(/\.[^/.]+$/, '') + '.md';
-            const downloadUrl = `/download-md?file_path=${encodeURIComponent(this.currentPreviewData.mdFilePath)}&filename=${encodeURIComponent(filename)}`;
-
-            // 使用安全的下载方式
-            const downloadLink = document.createElement('a');
-            downloadLink.href = downloadUrl;
-            downloadLink.download = filename;
-            downloadLink.target = '_blank';
-            downloadLink.style.display = 'none';
-
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-
-            setTimeout(() => {
-                document.body.removeChild(downloadLink);
-            }, 100);
-
-            this.showNotification('正在下载Markdown文件...', 'info');
+            window.open(`/download-md?file_path=${encodeURIComponent(this.currentPreviewData.mdFilePath)}&filename=${encodeURIComponent(filename)}`, '_blank');
         }
     }
 
@@ -1116,9 +904,6 @@ class FileConverter {
 
         document.body.appendChild(notification);
 
-        // 使用硬编码的通知持续时间（简化配置）
-        const duration = 5000; // 5秒
-
         // 自动移除通知
         setTimeout(() => {
             if (notification.parentNode) {
@@ -1129,7 +914,7 @@ class FileConverter {
                     }
                 }, 300);
             }
-        }, duration);
+        }, 5000);
 
         // 添加控制台日志
         console.log(`Notification [${type}]: ${message}`);
@@ -1157,8 +942,6 @@ class FileConverter {
 
     // 历史记录管理
     async showHistory() {
-        // 简化配置 - 历史记录功能始终启用
-
         this.hideAllPages();
         document.getElementById('historyPage').style.display = 'block';
 
@@ -1168,12 +951,7 @@ class FileConverter {
             const result = await response.json();
 
             if (result.success) {
-                if (result.message && result.message === '历史记录功能已禁用') {
-                    this.renderHistory([]);
-                    this.showNotification('历史记录功能已禁用', 'info');
-                } else {
-                    this.renderHistory(result.history);
-                }
+                this.renderHistory(result.history);
             } else {
                 throw new Error(result.message || '加载历史记录失败');
             }
@@ -1309,24 +1087,7 @@ class FileConverter {
                 const item = result.history.find(h => h.id === historyId);
                 if (item) {
                     const filename = item.original_name.replace(/\.[^/.]+$/, '') + '.md';
-
-                    // 创建临时下载链接，避免长URL导致的布局问题
-                    const downloadLink = document.createElement('a');
-                    downloadLink.href = `${item.download_url}&filename=${encodeURIComponent(filename)}`;
-                    downloadLink.download = filename;
-                    downloadLink.target = '_blank';
-                    downloadLink.style.display = 'none';
-
-                    // 添加到DOM并触发点击
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-
-                    // 清理DOM元素
-                    setTimeout(() => {
-                        document.body.removeChild(downloadLink);
-                    }, 100);
-
-                    this.showNotification('开始下载...', 'info');
+                    window.open(`${item.download_url}&filename=${encodeURIComponent(filename)}`, '_blank');
                 } else {
                     throw new Error('历史记录不存在');
                 }
@@ -1340,8 +1101,6 @@ class FileConverter {
     }
 
     async deleteHistoryItem(historyId) {
-        // 简化配置 - 历史记录功能始终启用
-
         if (!confirm('确定要删除这条历史记录吗？')) {
             return;
         }
@@ -1366,8 +1125,6 @@ class FileConverter {
     }
 
     async clearHistory() {
-        // 简化配置 - 历史记录功能始终启用
-
         if (!confirm('确定要清空所有历史记录吗？此操作不可恢复。')) {
             return;
         }

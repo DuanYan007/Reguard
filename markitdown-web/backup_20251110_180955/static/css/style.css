@@ -1117,8 +1117,6 @@ footer p i {
     align-items: center;
     justify-content: space-between;
     margin-bottom: 15px;
-    width: 100%;
-    flex-wrap: nowrap;
 }
 
 .history-item-info {
@@ -1160,18 +1158,12 @@ footer p i {
 .history-item-actions {
     display: flex;
     gap: 8px;
-    flex-shrink: 0;
-    align-items: center;
-    min-width: fit-content;
 }
 
 .history-item-actions .btn {
     padding: 6px 12px;
     font-size: 0.8rem;
     border-radius: 8px;
-    white-space: nowrap;
-    min-width: auto;
-    flex-shrink: 0;
 }
 
 .empty-history {

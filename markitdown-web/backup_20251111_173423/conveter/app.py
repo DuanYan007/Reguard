@@ -147,23 +147,11 @@ def setup_app():
     # 配置Flask应用
     app.config.update(flask_config)
 
-    # 获取存储路径配置
+    # 确保必要的目录存在
     upload_folder = get_config('storage.upload_folder')
     download_folder = get_config('storage.download_folder')
-
-    # 处理绝对路径：如果路径不是绝对路径，则相对于当前工作目录
-    if not os.path.isabs(upload_folder):
-        upload_folder = os.path.abspath(upload_folder)
-    if not os.path.isabs(download_folder):
-        download_folder = os.path.abspath(download_folder)
-
-    # 确保必要的目录存在
     os.makedirs(upload_folder, exist_ok=True)
     os.makedirs(download_folder, exist_ok=True)
-
-    # 更新应用配置中的绝对路径
-    app.config['UPLOAD_FOLDER'] = upload_folder
-    app.config['DOWNLOAD_FOLDER'] = download_folder
 
     # 设置日志
     setup_logging()
@@ -195,25 +183,13 @@ def on_config_change(old_config, new_config):
     flask_config = config_manager.get_flask_config()
     app.config.update(flask_config)
 
-    # 获取存储路径配置并处理绝对路径
+    # 确保目录存在（如果路径发生变化）
     upload_folder = get_config('storage.upload_folder')
     download_folder = get_config('storage.download_folder')
-
-    # 处理绝对路径：如果路径不是绝对路径，则相对于当前工作目录
-    if not os.path.isabs(upload_folder):
-        upload_folder = os.path.abspath(upload_folder)
-    if not os.path.isabs(download_folder):
-        download_folder = os.path.abspath(download_folder)
-
-    # 确保目录存在（如果路径发生变化）
     os.makedirs(upload_folder, exist_ok=True)
     os.makedirs(download_folder, exist_ok=True)
 
-    # 更新应用配置中的绝对路径
-    app.config['UPLOAD_FOLDER'] = upload_folder
-    app.config['DOWNLOAD_FOLDER'] = download_folder
-
-    logger.info(f"应用配置已更新 - 上传目录: {upload_folder}, 下载目录: {download_folder}")
+    logger.info("应用配置已更新")
 
 # 注册配置变化回调
 config_manager.add_callback(on_config_change)
@@ -319,20 +295,10 @@ def test_batch():
 def serve_imgs_image(img_file):
     """服务imgs目录中的图片文件"""
     try:
-        # 检查多个可能的imgs目录位置
-        possible_paths = [
-            os.path.join('./imgs', img_file),  # 相对于当前工作目录
-            os.path.join(app.config['DOWNLOAD_FOLDER'], 'imgs', img_file),  # 下载目录下的imgs
-            os.path.join(app.config['UPLOAD_FOLDER'], 'imgs', img_file),  # 上传目录下的imgs
-        ]
-
-        # 如果配置了绝对路径的imgs目录，也检查那里
-        if 'IMGS_FOLDER' in app.config:
-            possible_paths.append(os.path.join(app.config['IMGS_FOLDER'], img_file))
-
-        for path in possible_paths:
-            if os.path.exists(path):
-                return send_file(path)
+        # 检查imgs目录
+        imgs_path = os.path.join('./imgs', img_file)
+        if os.path.exists(imgs_path):
+            return send_file(imgs_path)
 
         abort(404)
     except Exception as e:
@@ -386,22 +352,16 @@ def serve_any_file(subpath):
         if not any(subpath.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']):
             abort(404)
 
-        # 构建可能的文件路径
-        possible_paths = [
-            subpath,  # 直接路径
-            os.path.join(app.config['DOWNLOAD_FOLDER'], subpath),  # 下载目录下
-            os.path.join(app.config['UPLOAD_FOLDER'], subpath),   # 上传目录下
-        ]
+        # 只允许访问特定目录
+        allowed_dirs = ['imgs', 'uploads', 'downloads']
+        if not any(subpath.startswith(dir_ + '/') for dir_ in allowed_dirs) and not subpath.startswith('uploads/'):
+            abort(404)
 
-        # 如果是imgs开头的路径，也检查当前工作目录
-        if subpath.startswith('imgs/'):
-            possible_paths.append(subpath)
-
-        for file_path in possible_paths:
-            if os.path.exists(file_path) and os.path.isfile(file_path):
-                return send_file(file_path)
-
-        abort(404)
+        file_path = subpath
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return send_file(file_path)
+        else:
+            abort(404)
     except Exception as e:
         print(f"[错误] 服务文件失败: {str(e)}")
         abort(404)
