@@ -155,7 +155,7 @@ pip install paddleocr
                     for path, image in item.items():
                         if image is not None:
                             # 直接使用PaddleOCR生成的路径，不做任何修改
-                            # PaddleOCR生成的path如"imgs/xxx.jpg"，我们就按这个路径保存
+                            # PaddleOCR生成的path如"images/xxx.jpg"，我们就按这个路径保存
                             file_path_abs = os.path.join(current_dir, path)
                             parent_dir = os.path.dirname(file_path_abs)
 
@@ -202,12 +202,12 @@ pip install paddleocr
             current_dir = os.getcwd()
 
             # 处理HTML img标签中的相对路径
-            # 匹配 <img src="imgs/xxx.jpg"> 格式
-            img_pattern = r'<img\s+src="imgs/([^"]+)"'
+            # 匹配 <img src="images/xxx.jpg"> 格式
+            img_pattern = r'<img\s+src="images/([^"]+)"'
 
             def replace_img_src(match):
                 img_file = match.group(1)
-                img_rel_path = f"imgs/{img_file}"
+                img_rel_path = f"images/{img_file}"
                 img_abs_path = os.path.join(current_dir, img_rel_path)
                 img_abs_path = os.path.abspath(img_abs_path)
                 # 使用正斜杠保持跨平台兼容性
@@ -216,13 +216,13 @@ pip install paddleocr
 
             content = re.sub(img_pattern, replace_img_src, content)
 
-            # 处理markdown格式的图片路径 ![alt](imgs/xxx.jpg)
-            md_img_pattern = r'!\[(.*?)\]\(imgs/([^)]+)\)'
+            # 处理markdown格式的图片路径 ![alt](images/xxx.jpg)
+            md_img_pattern = r'!\[(.*?)\]\(images/([^)]+)\)'
 
             def replace_md_img(match):
                 alt_text = match.group(1)
                 img_file = match.group(2)
-                img_rel_path = f"imgs/{img_file}"
+                img_rel_path = f"images/{img_file}"
                 img_abs_path = os.path.join(current_dir, img_rel_path)
                 img_abs_path = os.path.abspath(img_abs_path)
                 # 使用正斜杠保持跨平台兼容性

@@ -315,15 +315,15 @@ def test_batch():
     """批量转换测试页面"""
     return send_file('test_batch.html')
 
-@app.route("/imgs/<img_file>", methods=['GET'])
+@app.route("/images/<img_file>", methods=['GET'])
 def serve_imgs_image(img_file):
     """服务imgs目录中的图片文件"""
     try:
         # 检查多个可能的imgs目录位置
         possible_paths = [
             os.path.join('./imgs', img_file),  # 相对于当前工作目录
-            os.path.join(app.config['DOWNLOAD_FOLDER'], 'imgs', img_file),  # 下载目录下的imgs
-            os.path.join(app.config['UPLOAD_FOLDER'], 'imgs', img_file),  # 上传目录下的imgs
+            os.path.join(app.config['DOWNLOAD_FOLDER'], 'images', img_file),  # 下载目录下的imgs
+            os.path.join(app.config['UPLOAD_FOLDER'], 'images', img_file),  # 上传目录下的imgs
         ]
 
         # 如果配置了绝对路径的imgs目录，也检查那里
@@ -394,7 +394,7 @@ def serve_any_file(subpath):
         ]
 
         # 如果是imgs开头的路径，也检查当前工作目录
-        if subpath.startswith('imgs/'):
+        if subpath.startswith('images/'):
             possible_paths.append(subpath)
 
         for file_path in possible_paths:
@@ -1305,29 +1305,29 @@ def process_images_to_relative_paths_for_web(content):
         current_dir = os.getcwd()
 
         # 处理HTML img标签中的绝对路径
-        # 匹配 <img src="O:/Project/.../imgs/xxx.jpg"> 格式
-        img_pattern = r'<img\s+src="([^"]*imgs/[^"]+)"'
+        # 匹配 <img src="O:/Project/.../images/xxx.jpg"> 格式
+        img_pattern = r'<img\s+src="([^"]*images/[^"]+)"'
 
         def replace_img_src(match):
             abs_path = match.group(1)
             # 提取imgs/xxx.jpg部分
-            if 'imgs/' in abs_path:
-                rel_path = abs_path.split('imgs/')[-1]
-                return f'<img src="imgs/{rel_path}"'
+            if 'images/' in abs_path:
+                rel_path = abs_path.split('images/')[-1]
+                return f'<img src="images/{rel_path}"'
             return match.group(0)
 
         content = re.sub(img_pattern, replace_img_src, content)
 
-        # 处理markdown格式的图片路径 ![alt](O:/Project/.../imgs/xxx.jpg)
-        md_img_pattern = r'!\[(.*?)\]\(([^)]*imgs/[^)]+)\)'
+        # 处理markdown格式的图片路径 ![alt](O:/Project/.../images/xxx.jpg)
+        md_img_pattern = r'!\[(.*?)\]\(([^)]*images/[^)]+)\)'
 
         def replace_md_img(match):
             alt_text = match.group(1)
             abs_path = match.group(2)
             # 提取imgs/xxx.jpg部分
-            if 'imgs/' in abs_path:
-                rel_path = abs_path.split('imgs/')[-1]
-                return f'![{alt_text}](imgs/{rel_path})'
+            if 'images/' in abs_path:
+                rel_path = abs_path.split('images/')[-1]
+                return f'![{alt_text}](images/{rel_path})'
             return match.group(0)
 
         content = re.sub(md_img_pattern, replace_md_img, content)
