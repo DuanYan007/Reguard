@@ -9,6 +9,7 @@ from pathlib import Path
 
 def pdf_converter(file_path):
     """将PDF文档转换为Markdown格式字符串"""
+    print(file_path)
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"文件不存在: {file_path}")
 

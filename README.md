@@ -64,8 +64,11 @@ MarkItDown 是一个文档转换工具，对微软开源的 MarkItDown 项目进
   • 实时上传进度显示<br>
   • 多文件批量上传<br>
   • 文件大小和格式验证</p>
-  <p><strong>演示图片：</strong> <code>images/upload-demo.png</code></p>
+  <p><strong>演示图片：</strong> 
+      <img src = "images/upload-demo.png"></img> 
+      </p>
 </div>
+
 <br>
 
 #### 🔄 格式转换引擎
@@ -75,8 +78,8 @@ MarkItDown 是一个文档转换工具，对微软开源的 MarkItDown 项目进
   • PaddleOCR 智能版面分析<br>
   • 表格智能识别和重建<br>
   • 高保真格式转换</p>
-  <p><strong>演示图片：</strong> <code>images/conversion-demo.png</code></p>
 </div>
+
 
 <br>
 
@@ -87,7 +90,9 @@ MarkItDown 是一个文档转换工具，对微软开源的 MarkItDown 项目进
   • 图片路径智能处理<br>
   • 格式化内容显示<br>
   • 支持原始 Markdown 和渲染预览</p>
-  <p><strong>演示图片：</strong> <code>images/preview-demo.png</code></p>
+  <p><strong>演示图片：</strong> </p>
+    <img src="images/test_docx.png" >
+    <img src="images/test_docx_md.png" >
 </div>
 
 <br>
@@ -99,8 +104,12 @@ MarkItDown 是一个文档转换工具，对微软开源的 MarkItDown 项目进
   • 实时进度监控和状态显示<br>
   • 转换失败文件错误报告<br>
   • 批量结果管理</p>
-  <p><strong>演示图片：</strong> <code>images/batch-demo.png</code></p>
+  <p><strong>演示图片：</strong> </p>
+    <img src = "images/batch_1.png">
+    <img src = "images/batch_2.png">
+    <img src = "images/batch_3.png">
 </div>
+
 
 <br>
 
@@ -111,9 +120,10 @@ MarkItDown 是一个文档转换工具，对微软开源的 MarkItDown 项目进
   • 一键重新下载功能<br>
   • 历史记录搜索和过滤<br>
   • 批量管理操作</p>
-  <p><strong>演示图片：</strong> <code>images/history-demo.png</code></p>
+  <p><strong>演示图片：</strong> 
+    <img src = "images/history-demo.png"></img> 
+    </p>
 </div>
-
 <br>
 
 #### ⚙️ 配置管理系统
@@ -123,8 +133,7 @@ MarkItDown 是一个文档转换工具，对微软开源的 MarkItDown 项目进
   • 文件迁移原子操作<br>
   • 配置热更新生效<br>
   • 系统参数调优</p>
-  <p><strong>演示图片：</strong> <code>images/config-demo.png</code></p>
-</div>
+  <p><strong>演示图片：</strong> <img src = "images/config-interface-demo.png"></img> </div>
 
 <br>
 
@@ -135,7 +144,6 @@ MarkItDown 是一个文档转换工具，对微软开源的 MarkItDown 项目进
   • 表格智能识别和重建<br>
   • 图片提取和 OCR 识别<br>
   • 复杂文档结构保持</p>
-  <p><strong>演示图片：</strong> <code>images/pdf-advanced-demo.png</code></p>
 </div>
 
 <br>
@@ -147,8 +155,12 @@ MarkItDown 是一个文档转换工具，对微软开源的 MarkItDown 项目进
   • 中英文混合识别支持<br>
   • 多种图片格式支持<br>
   • 识别结果结构化输出</p>
-  <p><strong>演示图片：</strong> <code>images/ocr-demo.png</code></p>
+  <p><strong>演示图片：</strong></p>
+ <img src="images/test_png.png" style="width:48%; height:auto; vertical-align:middle; margin-right:8px;">
+    <img src="images/test_png_md.png" style="width:48%; height:auto; vertical-align:middle;">
+
 </div>
+
 
 ### 💡 使用场景示例
 
