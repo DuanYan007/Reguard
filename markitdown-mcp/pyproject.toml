@@ -8,15 +8,33 @@ version = "0.0.1"
 authors = [
   { name="DuanYan007", email="duanyan2024@gmail.com" },
 ]
-description = "duanyan007 test package"
+description = "Advanced MarkItDown MCP server with PaddleOCR support for PDF, images, and Office documents"
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Markup",
 ]
 license = "MIT"
 license-files = ["LICEN[CS]E*"]
+keywords = ["mcp", "markitdown", "ocr", "document-conversion", "pdf", "docx", "pptx", "xlsx"]
+
+dependencies = [
+    "mcp>=0.1.0",
+    "starlette>=0.27.0",
+    "uvicorn[standard]>=0.30.0",
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+xls = [
+    "xlrd==1.2.0",
+]
+all = [
+    "markitdown_mcp_advanced[xls]",
+]
 
 
 [project.urls]
@@ -24,5 +42,8 @@ Homepage = "https://github.com/DuanYan007/markitdown"
 Issues = "https://github.com/DuanYan007/markitdown/issues"
 
 [project.scripts]
-markitdown-mcp = "markitdown_mcp.__main__:main"
+markitdown-mcp = "markitdown_mcp_advanced.__main__:main"
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
 
