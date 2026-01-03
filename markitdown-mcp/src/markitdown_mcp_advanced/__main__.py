@@ -6,6 +6,7 @@ from starlette.applications import Starlette
 from starlette.routing import Route
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 import uvicorn
+from .converters import convert, get_supported_formats
 
 
 # 初始化 FastMCP 服务器
@@ -14,28 +15,35 @@ mcp = FastMCP("markitdown-mcp-advanced")
 
 @mcp.tool()
 async def convert_to_markdown(source: str) -> str:
+    try:
+        # 在线程池中执行转换（避免阻塞事件循环）
+        loop = asyncio.get_event_loop()
+        markdown = await loop.run_in_executor(None, convert, source)
+
+        return markdown
+
+    except ValueError as e:
+        return f"Error: {str(e)}"
+    except FileNotFoundError as e:
+        return f"File not found: {str(e)}"
+    except Exception as e:
+        return f"Conversion failed: {str(e)}"
+
+
+@mcp.tool()
+async def list_supported_formats() -> str:
     """
-    将文档转换为 Markdown 格式
-
-    支持的输入格式：
-    - 本地文件路径：/path/to/file.pdf 或 C:\\path\\to\\file.pdf
-    - HTTP URL：https://example.com/file.docx
-    - 标准 URI：file:///path/to/file.pdf
-
-    使用 PaddleOCR 进行 PDF 和图片的文本识别
-
-    Args:
-        source: 文档来源（文件路径、URL 或 URI）
+    获取支持的文件格式列表
 
     Returns:
-        转换后的 Markdown 文本
+        支持的文件扩展名列表（JSON 格式）
     """
-    # TODO: 在这里实现你的核心转换逻辑
-    # 示例：
-    # from .core import convert_document
-    # loop = asyncio.get_event_loop()
-    # return await loop.run_in_executor(None, convert_document, source)
-    pass
+    import json
+    formats = get_supported_formats()
+    return json.dumps({
+        "total": len(formats),
+        "formats": sorted(formats)
+    }, indent=2, ensure_ascii=False)
 
 
 def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlette:
@@ -87,8 +95,8 @@ def main():
     parser.add_argument(
         "--port",
         type=int,
-        default=3001,
-        help="监听端口（仅 HTTP 模式，默认：3001）"
+        default=7566,
+        help="监听端口（仅 HTTP 模式，默认：7566）"
     )
 
     args = parser.parse_args()
